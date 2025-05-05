@@ -1,1 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orestify Admin Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
 
+  <!-- LOGIN -->
+  <section id="login" class="min-h-screen flex flex-col justify-center items-center p-6">
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
+      <h1 class="text-3xl font-bold mb-6 text-center">Orestify Login</h1>
+      <p class="mb-4 text-gray-600">Select your role:</p>
+      <div class="space-y-3">
+        <button id="asOwner" class="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center">
+          <i data-lucide="user-check" class="w-5 h-5 mr-2"></i> Owner
+        </button>
+        <button id="asWaiter" class="w-full py-3 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center">
+          <i data-lucide="user" class="w-5 h-5 mr-2"></i> Waiter
+        </button>
+        <button id="asKitchen" class="w-full py-3 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center">
+          <i data-lucide="coffee" class="w-5 h-5 mr-2"></i> Kitchen
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNER PORTAL -->
+  <section id="owner" class="hidden min-h-screen p-6">
+    <nav class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Owner Portal</h2>
+      <button id="logoutOwner" class="text-red-500 hover:underline">Logout</button>
+    </nav>
+    <div id="ownerContent" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+  </section>
+
+  <!-- WAITER PORTAL -->
+  <section id="waiter" class="hidden min-h-screen p-6">
+    <nav class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Waiter Portal</h2>
+      <button id="logoutWaiter" class="text-red-500 hover:underline">Logout</button>
+    </nav>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-medium mb-2">Assigned Tables</h3>
+        <ul id="tableList" class="list-disc list-inside"></ul>
+      </div>
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-medium mb-2">Waiter Calls</h3>
+        <ul id="callList" class="list-disc list-inside"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- KITCHEN PORTAL -->
+  <section id="kitchen" class="hidden min-h-screen p-6">
+    <nav class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Kitchen Dashboard</h2>
+      <button id="logoutKitchen" class="text-red-500 hover:underline">Logout</button>
+    </nav>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-medium mb-2">Live Orders</h3>
+        <ul id="orderList" class="list-decimal list-inside"></ul>
+      </div>
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-medium mb-2">Delay Alerts</h3>
+        <ul id="delayList" class="list-decimal list-inside text-red-600"></ul>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // Sections list
+    const secs = ['login','owner','waiter','kitchen'];
+
+    // Show a section by id
+    function show(id) {
+      secs.forEach(s => document.getElementById(s).classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      if(id==='owner') populateOwner();
+      if(id==='waiter') populateWaiter();
+      if(id==='kitchen') populateKitchen();
+    }
+
+    // Hook login buttons
+    document.getElementById('asOwner').onclick   = ()=>show('owner');
+    document.getElementById('asWaiter').onclick  = ()=>show('waiter');
+    document.getElementById('asKitchen').onclick = ()=>show('kitchen');
+    document.getElementById('logoutOwner').onclick   = ()=>show('login');
+    document.getElementById('logoutWaiter').onclick  = ()=>show('login');
+    document.getElementById('logoutKitchen').onclick = ()=>show('login');
+
+    // Sample data
+    const ownerCards = [
+      {icon:'users',         label:'Manage Waiters'},
+      {icon:'bar-chart-2',   label:'Performance Dashboard'},
+      {icon:'settings',      label:'Menu & Inventory'},
+      {icon:'database',      label:'Inventory-Hide'},
+      {icon:'gift',          label:'Fidelity Coupons'},
+      {icon:'calendar',      label:'Seasonal Menu Sync'},
+      {icon:'user-check',    label:'Customer Retargeting CRM'},
+      {icon:'table',         label:'Service Tracking'},
+      {icon:'message-square',label:'Direct Complaints'}
+    ];
+    const waiterTables  = ['Table 1','Table 2','Table 3'];
+    const waiterCalls   = ['Table 1: Water','Table 2: Bill'];
+    const kitchenOrders = ['Order #201','Order #202','Order #203'];
+    const kitchenDelays = ['Order #200 delayed','Order #202 delayed'];
+
+    // Populate Owner Portal
+    function populateOwner() {
+      const c = document.getElementById('ownerContent');
+      c.innerHTML = '';
+      ownerCards.forEach(o => {
+        const d = document.createElement('div');
+        d.className = 'bg-white rounded-xl shadow p-6 flex flex-col items-center';
+        d.innerHTML = `
+          <i data-lucide="${o.icon}" class="w-12 h-12 text-blue-500 mb-3"></i>
+          <h3 class="text-lg font-medium mb-4">${o.label}</h3>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded owner-btn" data-act="${o.label}">
+            Open
+          </button>`;
+        c.appendChild(d);
+      });
+      lucide.createIcons();
+      document.querySelectorAll('.owner-btn').forEach(b=>{
+        b.onclick = ()=>alert(b.dataset.act+' clicked');
+      });
+    }
+
+    // Populate Waiter Portal
+    function populateWaiter() {
+      document.getElementById('tableList').innerHTML =
+        waiterTables.map(t => 
+          `<li>${t} <button class="text-sm text-green-600 ml-2" onclick="alert('Serving ${t}')">Serve</button></li>`
+        ).join('');
+      document.getElementById('callList').innerHTML =
+        waiterCalls.map(c => 
+          `<li>${c} <button class="text-sm text-blue-600 ml-2" onclick="alert('Responded to ${c}')">Respond</button></li>`
+        ).join('');
+    }
+
+    // Populate Kitchen Portal
+    function populateKitchen() {
+      document.getElementById('orderList').innerHTML =
+        kitchenOrders.map(o=>
+          `<li>${o} <button class="text-sm text-indigo-600 ml-2" onclick="alert('Marked ${o} Ready')">Ready</button></li>`
+        ).join('');
+      document.getElementById('delayList').innerHTML =
+        kitchenDelays.map(d=>
+          `<li>${d} <button class="text-sm text-red-600 ml-2" onclick="alert('Acknowledged ${d}')">OK</button></li>`
+        ).join('');
+    }
+
+    // Start at login
+    show('login');
+  </script>
+</body>
+</html>
