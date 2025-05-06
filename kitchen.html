@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orestify - Royel Spicy রান্নাঘর ডিসপ্লে</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function checkDelays() {
+      document.querySelectorAll("[data-mins]").forEach(el => {
+        const mins = parseInt(el.getAttribute("data-mins"));
+        if (mins <= 0) {
+          el.innerHTML = "<span class='text-red-500 font-bold'>বিলম্বিত</span>";
+        } else {
+          el.innerText = mins + " মিনিট";
+        }
+      });
+    }
+
+    setInterval(() => {
+      document.querySelectorAll("[data-mins]").forEach(el => {
+        let mins = parseInt(el.getAttribute("data-mins"));
+        mins--;
+        el.setAttribute("data-mins", mins);
+      });
+      checkDelays();
+    }, 60000);
+  </script>
+</head>
+<body class="bg-green-900 text-white p-6 font-sans">
+
+  <!-- লাইভ এলার্ট -->
+  <div class="bg-white text-green-800 text-center py-4 mb-6 rounded-xl shadow-xl text-4xl font-bold animate-pulse">
+    বিশেষ নির্দেশনা: “টেবিল ৩ এর অর্ডারগুলো যাচাই করে পাঠাতে হবে”
+  </div>
+
+  <header class="text-center mb-8">
+    <h1 class="text-6xl font-extrabold text-white">ORESTIFY</h1>
+    <h2 class="text-3xl mt-2 text-green-200">রান্নাঘর ডিসপ্লে প্যানেল</h2>
+  </header>
+
+  <!-- প্রাধান্য অনুযায়ী ভাগ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <!-- Priority -->
+    <section class="bg-green-800 p-6 rounded-2xl shadow-xl">
+      <h2 class="text-4xl font-semibold text-white mb-4 text-center">উচ্চ প্রাধান্য</h2>
+      <div class="space-y-6">
+        <div class="bg-white text-green-900 p-5 rounded-xl border-l-8 border-red-600 scale-[1.1]">
+          <h3 class="text-3xl font-bold">Table 1 (বড় অর্ডার)</h3>
+          <p class="text-2xl mt-1">#ORD2101</p>
+          <ul class="ml-4 mt-2 list-disc text-xl">
+            <li>৫টি চিকেন কোরমা</li>
+            <li>৫টি বাটার নান</li>
+            <li>৩টি ম্যাঙ্গো লাচ্ছি</li>
+          </ul>
+          <p class="text-2xl mt-3">বাকি সময়: <span data-mins="2">2 মিনিট</span></p>
+          <button class="mt-3 px-6 py-3 bg-green-700 hover:bg-green-800 text-xl rounded-xl text-white">Mark as Ready</button>
+        </div>
+      </div>
+    </section>
+    
+    
+    <div class="bg-white text-green-900 p-5 rounded-xl border-l-8 border-red-600 scale-[1.1]">
+  <h3 class="text-3xl font-bold">Table 2 (বড় অর্ডার)</h3>
+  <p class="text-2xl mt-1">#ORD2101</p>
+  <ul class="ml-4 mt-2 list-disc text-2xl text-green-900 font-semibold">
+    <li>৫টি চিকেন কোরমা</li>
+    <li>৫টি বাটার নান</li>
+    <li>৩টি ম্যাঙ্গো লাচ্ছি</li>
+  </ul>
+  <div class="mt-3 bg-yellow-100 text-yellow-800 p-3 rounded-xl text-xl">
+    ওয়েটার নির্দেশনা: <strong>গরম অবস্থায় সার্ভ করতে হবে</strong>
+  </div>
+  <p class="text-2xl mt-4">বাকি সময়: <span data-mins="2">2 মিনিট</span></p>
+  <button class="mt-3 px-6 py-3 bg-green-700 hover:bg-green-800 text-xl rounded-xl text-white">Mark as Ready</button>
+</div>
+
+    <!-- মাঝারি প্রাধান্য -->
+    <section class="bg-green-700 p-6 rounded-2xl shadow-xl">
+      <h2 class="text-4xl font-semibold text-white mb-4 text-center">মাঝারি প্রাধান্য</h2>
+      <div class="space-y-6">
+        <div class="bg-white text-green-900 p-5 rounded-xl border-l-8 border-yellow-500">
+          <h3 class="text-3xl font-bold">TakeAway</h3>
+          <p class="text-2xl mt-1">#ORD2099</p>
+          <ul class="ml-4 mt-2 list-disc text-xl">
+            <li>২টি ভেজ পুলাও</li>
+            <li>২টি মিষ্টি লাচ্ছি</li>
+          </ul>
+          <p class="text-2xl mt-3">বাকি সময়: <span data-mins="7">7 মিনিট</span></p>
+          <button class="mt-3 px-6 py-3 bg-green-700 hover:bg-green-800 text-xl rounded-xl text-white">Mark as Ready</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- নিম্ন প্রাধান্য -->
+    <section class="bg-green-700 p-6 rounded-2xl shadow-xl">
+      <h2 class="text-4xl font-semibold text-white mb-4 text-center">Low Priority</h2>
+      <div class="space-y-6">
+        <div class="bg-white text-green-900 p-5 rounded-xl border-l-8 border-green-500">
+          <h3 class="text-3xl font-bold">TakeAway</h3>
+          <p class="text-2xl mt-1">#ORD2099</p>
+          <ul class="ml-4 mt-2 list-disc text-xl">
+            <li>১টি চিকেন পুলাও</li>
+            <li>১টি মিষ্টি লাচ্ছি</li>
+          </ul>
+          <p class="text-2xl mt-3">বাকি সময়: <span data-mins="7">7 মিনিট</span></p>
+  <button onclick="markAsReady(this)" class="mt-4 bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded text-lg">Mark as Ready</button>
+
+</div>
+        
+  <script>
+    function markAsReady(button) {
+      const card = button.closest('.order-card');
+      card.remove();
+    }
+  </script>
+
+        </div>
+    </section>
+
+
+<footer class="bg-green-800 text-white p-4 text-center fixed bottom-0 left-0 w-full">
+  &copy; 2025 Orestify | কিচেন ডিসপ্লে
+</footer>
+    
+</body>
+</html>
