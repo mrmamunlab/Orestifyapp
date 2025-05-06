@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>বাংলাদেশি রেস্টুরেন্ট সংস্কৃতি ড্যাশবোর্ড</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Noto Serif Bengali', serif;
+      background: linear-gradient(to right, #f0fff4, #ffffff);
+      color: #1a3d1a;
+    }
+    .sidebar {
+      background-color: #014421;
+      color: white;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .nav-link {
+      display: block;
+      padding: 12px 16px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .nav-link:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .nav-link i {
+      margin-right: 8px;
+    }
+    .card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 100, 0, 0.15);
+      margin-bottom: 24px;
+    }
+    iframe {
+      width: 100%;
+      height: 1000px;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+    section {
+      display: none;
+    }
+    section.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="flex">
+    <aside class="w-72 sidebar">
+      <h2 class="text-2xl font-bold mb-6">রেস্টুরেন্ট পোর্টাল</h2>
+      <nav id="nav">
+        <a href="#overview" class="nav-link"><i class="fas fa-chart-line"></i>ড্যাশবোর্ড</a>
+        <a href="#crm" class="nav-link"><i class="fas fa-handshake"></i>CRM</a>
+        <a href="#staff" class="nav-link"><i class="fas fa-user-friends"></i>কর্মী বিভাগ</a>
+        <a href="#kitchen" class="nav-link"><i class="fas fa-concierge-bell"></i>কিচেন</a>
+        <a href="#waiter" class="nav-link"><i class="fas fa-user-tie"></i>ওয়েটার</a>
+        <a href="#reservations" class="nav-link"><i class="fas fa-calendar-check"></i>রিজার্ভেশন</a>
+        <a href="#finance" class="nav-link"><i class="fas fa-dollar-sign"></i>রাজস্ব ও ট্যাক্স</a>
+        <a href="#feedback" class="nav-link"><i class="fas fa-comment-dots"></i>প্রতিক্রিয়া</a>
+        <a href="#fidelity" class="nav-link"><i class="fas fa-gift"></i>ফিডেলিটি বোনাস</a>
+        <a href="#menu" class="nav-link"><i class="fas fa-utensils"></i>মেনু আপডেট</a>
+        <a href="#logs" class="nav-link"><i class="fas fa-clipboard-list"></i>লগস</a>
+      </nav>
+    </aside>
+    <main class="flex-1 p-8">
+      <section id="overview" class="card active">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-green-100 p-4 rounded-lg shadow text-center">
+            <i class="fas fa-coins text-green-600 text-2xl"></i>
+            <p class="mt-2 font-bold">আজকের রাজস্ব: ৳৪৫,০০০</p>
+          </div>
+          <div class="bg-green-100 p-4 rounded-lg shadow text-center">
+            <i class="fas fa-users text-green-600 text-2xl"></i>
+            <p class="mt-2 font-bold">সক্রিয় কর্মী: ১৫ জন</p>
+          </div>
+          <div class="bg-green-100 p-4 rounded-lg shadow text-center">
+            <i class="fas fa-fire text-green-600 text-2xl"></i>
+            <p class="mt-2 font-bold">চলমান অর্ডার: ৮ টি</p>
+          </div>
+          <div class="bg-green-100 p-4 rounded-lg shadow text-center">
+            <i class="fas fa-utensils text-green-600 text-2xl"></i>
+            <p class="mt-2 font-bold">সর্বাধিক বিক্রিত: বিরিয়ানি</p>
+          </div>
+        </div>
+        <div class="mt-6">
+          <canvas id="salesChart"></canvas>
+        </div>
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-bold mb-2">সপ্তাহিক সার্ভিস প্রেশার</h3>
+            <canvas id="pressureChart"></canvas>
+          </div>
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-bold mb-2">সিজনাল মেনু ট্রেন্ড</h3>
+            <canvas id="seasonalChart"></canvas>
+          </div>
+        </div>
+      </section>
+      <section id="crm" class="card"><iframe src="mock/crm.html"></iframe></section>
+      <section id="staff" class="card"><iframe src="mock/staff.html"></iframe></section>
+      <section id="kitchen" class="card"><iframe src="mock/kitchen.html"></iframe></section>
+      <section id="waiter" class="card"><iframe src="mock/waiter.html"></iframe></section>
+      <section id="reservations" class="card"><iframe src="mock/reservations.html"></iframe></section>
+      <section id="finance" class="card"><iframe src="mock/finance.html"></iframe></section>
+      <section id="feedback" class="card"><iframe src="mock/feedback.html"></iframe></section>
+      <section id="fidelity" class="card"><iframe src="mock/fidelity.html"></iframe></section>
+      <section id="menu" class="card"><iframe src="mock/menu.html"></iframe></section>
+      <section id="logs" class="card"><iframe src="mock/logs.html"></iframe></section>
+    </main>
+  </div>
+  <script>
+    // ChartJS Setup
+    new Chart(document.getElementById('salesChart'), {
+      type: 'bar',
+      data: {
+        labels: ['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'],
+        datasets: [{
+          label: 'বিক্রয় (৳)',
+          data: [12000, 18000, 15000, 16000, 20000, 25000, 22000],
+          backgroundColor: '#16a34a'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    new Chart(document.getElementById('pressureChart'), {
+      type: 'line',
+      data: {
+        labels: ['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'],
+        datasets: [{
+          label: 'অর্ডার চাপ',
+          data: [20, 40, 35, 50, 45, 60, 55],
+          backgroundColor: 'rgba(34,197,94,0.2)',
+          borderColor: '#16a34a',
+          fill: true
+        }]
+      }
+    });
+
+    new Chart(document.getElementById('seasonalChart'), {
+      type: 'pie',
+      data: {
+        labels: ['বিরিয়ানি', 'খিচুরি', 'পোলাও', 'চিকেন রোস্ট'],
+        datasets: [{
+          label: 'বিক্রি',
+          data: [300, 200, 150, 100],
+          backgroundColor: ['#15803d','#65a30d','#facc15','#fb923c']
+        }]
+      }
+    });
+
+    // Navigation
+    document.querySelectorAll('#nav a').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
