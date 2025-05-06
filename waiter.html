@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" x-data="portal()" x-init="loadInstructions()">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waiter Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    /* Eye-comfort palette: white & felt-green */
+    body { font-family:sans-serif; background:#ffffff; color:#26432a; margin:0; padding:1rem }
+    .card { background:#f3fdfa; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.05); padding:1rem; margin-bottom:1rem }
+    .card-header { font-weight:600; margin-bottom:.5rem; color:#226622 }
+    .btn { background:#2e7d32; color:#fff; padding:.5rem 1rem; border:none; border-radius:4px; cursor:pointer; transition:.2s }
+    .btn:hover { background:#276c2a }
+    .btn-clear { background:#e5f5ea; color:#26432a; padding:.25rem .5rem; border:none; border-radius:4px; cursor:pointer }
+    .tablecalling { display:flex; justify-content:space-between; align-items:center; background:#a8e6a3; color:#1b5e20; padding:.5rem; border-radius:6px; margin-bottom:.5rem }
+    .tablecalling.flash { animation:flash 1s infinite }
+    @keyframes flash {0%,100%{background:#c8f0c8}50%{background:#a8e6a3}}
+    .table-card { display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #d0f0e0; border-radius:6px; padding:.75rem; margin-bottom:.75rem }
+    .table-info h3{ margin:0; font-weight:600; color:#226622 } .table-info p{ margin:.25rem 0; color:#445544 }
+    textarea { background:#f1fff4; color:#26432a }
+    .action-buttons{ display:flex; gap:.5rem; flex-wrap:wrap }
+    [x-cloak]{ display:none!important }
+    @media(max-width:768px){ .table-card{flex-direction:column;align-items:flex-start} .action-buttons{flex-direction:column;width:100%} }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-2xl font-bold text-center mb-4">Waiter Portal</h1>
+
+  <!-- Manager Instructions -->
+  <div class="card">
+    <div class="card-header">Manager Instructions</div>
+    <ul>
+      <template x-for="(task,i) in managerTasks" :key="i">
+        <li class="flex justify-between items-center">
+          <span x-text="task"></span>
+          <button class="btn-clear" @click="managerTasks.splice(i,1)">&times;</button>
+        </li>
+      </template>
+    </ul>
+  </div>
+
+  <!-- Table Calling Alerts -->
+  <div class="card">
+    <div class="card-header">Table Calling</div>
+    <ul>
+      <template x-for="(n,i) in visibleNotifications" :key="i">
+        <li :class="{'flash':n.isCall}" class="tablecalling">
+          <div class="flex-1 text-lg font-bold" x-text="n.message"></div>
+          <div class="flex gap-2">
+            <button class="btn" x-show="n.isCall" @click="answer(i)">Answer</button>
+            <button class="btn-clear" @click="clearNotification(i)">&times;</button>
+          </div>
+        </li>
+      </template>
+    </ul>
+    <button class="btn-clear mt-2" x-show="showSeeMore" @click="showAll()">See More</button>
+  </div>
+
+  <!-- Tables Grid -->
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <template x-for="(t,i) in tables" :key="t.number">
+      <div class="table-card">
+        <div class="table-info w-full">
+          <h3>Table <span x-text="t.number"></span></h3>
+          <p x-text="t.order"></p>
+          <textarea x-model="t.instr"
+                    placeholder="Kitchen instruction"
+                    class="w-full mt-2 p-2 border rounded"></textarea>
+          <template x-if="t.sentInstr">
+            <div class="mt-1 p-2 bg-green-100 border border-green-300 rounded flex justify-between items-center">
+              <span class="text-green-800 text-sm">Sent: <span x-text="t.sentInstr"></span></span>
+              <button class="btn-clear text-green-800" @click="t.instr=t.sentInstr; t.sentInstr=''">Edit</button>
+            </div>
+          </template>
+        </div>
+        <div class="action-buttons">
+          <button class="btn" @click="send(i)">Send</button>
+          <button class="btn" x-show="!t.served" @click="serve(i)">Mark Served</button>
+          <button class="btn" x-show="t.served" @click="undo(i)">Undo</button>
+          <button class="btn-clear" @click="openTransfer(i)">Transfer</button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Transfer Modal -->
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+       x-show="transfer.open" x-cloak>
+    <div class="card w-80">
+      <div class="card-header">Transfer Table <span x-text="transfer.num"></span></div>
+      <input x-model="transfer.name" placeholder="Colleague name"
+             class="w-full p-2 border rounded mb-4" />
+      <div class="flex justify-end gap-2">
+        <button class="btn-clear" @click="closeTransfer()">Cancel</button>
+        <button class="btn" @click="confirmTransfer()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+function portal(){
+  return {
+    managerTasks: [
+      'Clean Table 3 after guests leave',
+      'Take feedback from Table 2',
+      'Restock napkins at Table 4'
+    ],
+    notifications: [],
+    tables: [
+      {number:1,order:'2 Burgers, 1 Soda',instr:'',sentInstr:'',served:false,removalTimeout:null},
+      {number:2,order:'3 Pizzas, 2 Cokes',instr:'',sentInstr:'',served:false,removalTimeout:null},
+      {number:3,order:'1 Pasta, 1 Espresso',instr:'',sentInstr:'',served:false,removalTimeout:null},
+      {number:4,order:'2 Steaks, 1 Wine',instr:'',sentInstr:'',served:false,removalTimeout:null},
+      {number:5,order:'2 Coffees, 1 Croissant',instr:'',sentInstr:'',served:false,removalTimeout:null},
+    ],
+    transfer:{open:false,index:null,num:null,name:''},
+
+    loadInstructions(){
+      this.tables.forEach(t=>{
+        const saved = localStorage.getItem('instr-'+t.number);
+        if(saved) t.sentInstr = saved;
+      });
+      setTimeout(()=>this.addNotif('Table 1 is calling!',true),2000);
+      setTimeout(()=>this.addNotif('Table 4 is calling!',true),5000);
+    },
+
+    get visibleNotifications(){
+      return this.notifications.slice(-5);
+    },
+    get showSeeMore(){
+      return this.notifications.length>5;
+    },
+
+    addNotif(msg,isCall=false){
+      this.notifications.push({message:msg,isCall});
+      setTimeout(()=>this.notifications.shift(),300000);
+    },
+    clearNotification(i){
+      this.notifications.splice(i,1);
+    },
+    showAll(){},
+
+    answer(i){
+      this.clearNotification(i);
+    },
+
+    send(i){
+      const t=this.tables[i];
+      t.sentInstr = t.instr;
+      localStorage.setItem('instr-'+t.number, t.sentInstr);
+      t.instr = '';
+    },
+
+    serve(i){
+      const t=this.tables[i];
+      t.served = true;
+      t.removalTimeout = setTimeout(()=>{
+        this.tables.splice(i,1);
+      },3000);
+    },
+    undo(i){
+      const t=this.tables[i];
+      clearTimeout(t.removalTimeout);
+      t.served=false;
+      t.removalTimeout=null;
+    },
+
+    openTransfer(i){
+      this.transfer={open:true,index:i,num:this.tables[i].number,name:''};
+    },
+    closeTransfer(){
+      this.transfer.open=false;
+    },
+    confirmTransfer(){
+      this.tables.splice(this.transfer.index,1);
+      this.closeTransfer();
+    }
+  }
+}
+document.addEventListener('alpine:init',()=>Alpine.data('portal',portal));
+</script>
+</body>
+</html>
