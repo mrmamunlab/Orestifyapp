@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orestify Admin Panel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Mobile Header -->
+    <header class="bg-gradient-to-r from-teal-700 to-cyan-600 text-white p-4 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center">
+                <img id="brandLogoPreview" src="" alt="Logo" class="w-10 h-10 rounded-full object-cover mr-3 hidden">
+                <h1 class="text-xl font-bold">Orestify Admin</h1>
+            </div>
+            <div id="notificationBadge" class="relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span id="notificationCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 pb-20">
+        <!-- Branding Section -->
+        <section class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-semibold text-lg"><i class="fas fa-palette text-teal-600 mr-2"></i>Branding</h2>
+                <button id="saveBranding" class="bg-teal-600 text-white px-3 py-1 rounded-lg text-sm">Save</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload Logo</label>
+                    <div class="flex items-center">
+                        <label for="logoUpload" class="cursor-pointer bg-gray-100 p-2 rounded-lg">
+                            <i class="fas fa-upload mr-2"></i>Choose File
+                        </label>
+                        <input id="logoUpload" type="file" accept="image/*" class="hidden">
+                        <span id="fileName" class="ml-2 text-sm text-gray-500">No file chosen</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Brand Color</label>
+                    <input type="color" id="brandColorPicker" value="#0d9488" class="h-10 w-full">
+                </div>
+            </div>
+        </section>
+
+        <!-- Menu Management -->
+        <section class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-semibold text-lg"><i class="fas fa-utensils text-teal-600 mr-2"></i>Menu Items</h2>
+                <button id="addItemBtn" class="bg-teal-600 text-white px-3 py-1 rounded-lg text-sm">Add New</button>
+            </div>
+            
+            <div id="menuItemsContainer" class="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
+                <!-- Items will be added here dynamically -->
+                <div class="text-center text-gray-500 py-4" id="noItemsMessage">
+                    <i class="fas fa-info-circle text-2xl mb-2"></i>
+                    <p>No menu items added yet</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- QR Generator -->
+        <section class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <h2 class="font-semibold text-lg mb-3"><i class="fas fa-qrcode text-teal-600 mr-2"></i>QR Codes</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Table Number</label>
+                    <input type="number" id="tableNumber" placeholder="Enter table number" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <button id="generateQRBtn" class="w-full bg-teal-600 text-white py-2 rounded-lg">
+                    <i class="fas fa-qrcode mr-2"></i>Generate QR Code
+                </button>
+                
+                <div id="qrCodeContainer" class="flex flex-col items-center hidden">
+                    <canvas id="qrCanvas" class="border p-2 rounded-lg mb-2"></canvas>
+                    <button id="downloadQRBtn" class="text-teal-600 text-sm">
+                        <i class="fas fa-download mr-1"></i>Download
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Dashboard -->
+        <section class="bg-white rounded-xl shadow-md p-4">
+            <h2 class="font-semibold text-lg mb-3"><i class="fas fa-chart-line text-teal-600 mr-2"></i>Analytics</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <p class="text-sm text-gray-500">Today's Orders</p>
+                    <p id="todayOrders" class="text-2xl font-bold">0</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <p class="text-sm text-gray-500">Popular Item</p>
+                    <p id="popularItem" class="text-xl font-bold">-</p>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h3 class="font-medium mb-2"><i class="fas fa-clock text-teal-600 mr-2"></i>Recent Activity</h3>
+                <div id="recentActivity" class="space-y-2 text-sm">
+                    <div class="flex items-center text-gray-500">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <p>No recent activity</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-2"><i class="fas fa-users text-teal-600 mr-2"></i>Customer Behavior</h3>
+                <div id="customerBehavior" class="text-sm space-y-1">
+                    <div class="flex items-center text-gray-500">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <p>No data available</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg flex justify-around items-center p-3">
+        <button class="flex flex-col items-center text-teal-600">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-xs mt-1">Dashboard</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-clipboard-list text-xl"></i>
+            <span class="text-xs mt-1">Orders</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-cog text-xl"></i>
+            <span class="text-xs mt-1">Settings</span>
+        </button>
+    </nav>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-5 w-11/12 max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-lg">Add Menu Item</h3>
+                <button id="closeModalBtn" class="text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                    <input type="text" id="itemName" placeholder="e.g. Chicken Biryani" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <input type="number" id="itemPrice" placeholder="e.g. 250" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select id="itemCategory" class="w-full p-2 border rounded-lg">
+                        <option value="main">Main Course</option>
+                        <option value="appetizer">Appetizer</option>
+                        <option value="dessert">Dessert</option>
+                        <option value="drink">Drink</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <textarea id="itemDescription" rows="2" class="w-full p-2 border rounded-lg"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                    <input type="file" id="itemImage" accept="image/*" class="w-full">
+                </div>
+                
+                <button id="saveItemBtn" class="w-full bg-teal-600 text-white py-2 rounded-lg mt-2">
+                    Save Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const logoUpload = document.getElementById('logoUpload');
+        const brandLogoPreview = document.getElementById('brandLogoPreview');
+        const brandColorPicker = document.getElementById('brandColorPicker');
+        const saveBrandingBtn = document.getElementById('saveBranding');
+        const fileName = document.getElementById('fileName');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const menuItemsContainer = document.getElementById('menuItemsContainer');
+        const noItemsMessage = document.getElementById('noItemsMessage');
+        const tableNumberInput = document.getElementById('tableNumber');
+        const generateQRBtn = document.getElementById('generateQRBtn');
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const downloadQRBtn = document.getElementById('downloadQRBtn');
+        const todayOrders = document.getElementById('todayOrders');
+        const popularItem = document.getElementById('popularItem');
+        const recentActivity = document.getElementById('recentActivity');
+        const customerBehavior = document.getElementById('customerBehavior');
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationCount = document.getElementById('notificationCount');
+        const addItemModal = document.getElementById('addItemModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveItemBtn = document.getElementById('saveItemBtn');
+        
+        // Menu items array
+        let menuItems = JSON.parse(localStorage.getItem('menuItems')) || [];
+        let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+        
+        // Initialize QR Code
+        const qrCode = new QRCode(qrCanvas, {
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Event Listeners
+        logoUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    brandLogoPreview.src = event.target.result;
+                    brandLogoPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        saveBrandingBtn.addEventListener('click', function() {
+            localStorage.setItem('brandColor', brandColorPicker.value);
+            if (logoUpload.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    localStorage.setItem('brandLogo', event.target.result);
+                    showNotification('Branding saved successfully!');
+                };
+                reader.readAsDataURL(logoUpload.files[0]);
+            } else {
+                showNotification('Branding saved successfully!');
+            }
+            applyBranding();
+        });
+        
+        addItemBtn.addEventListener('click', function() {
+            addItemModal.classList.remove('hidden');
+        });
+        
+        closeModalBtn.addEventListener('click', function() {
+            addItemModal.classList.add('hidden');
+        });
+        
+        saveItemBtn.addEventListener('click', function() {
+            const name = document.getElementById('itemName').value.trim();
+            const price = document.getElementById('itemPrice').value.trim();
+            const category = document.getElementById('itemCategory').value;
+            const description = document.getElementById('itemDescription').value.trim();
+            
+            if (!name || !price) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            const newItem = {
+                id: Date.now(),
+                name,
+                price,
+                category,
+                description,
+                visible: true,
+                image: null
+            };
+            
+            // Handle image upload if exists
+            const imageFile = document.getElementById('itemImage').files[0];
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    newItem.image = event.target.result;
+                    addItemToMenu(newItem);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                addItemToMenu(newItem);
+            }
+        });
+        
+        generateQRBtn.addEventListener('click', function() {
+            const tableNumber = tableNumberInput.value.trim();
+            if (!tableNumber) {
+                alert('Please enter a table number');
+                return;
+            }
+            
+            // In a real app, this would be your menu URL with table parameter
+            const qrData = `https://example.com/menu?table=${tableNumber}`;
+            qrCode.makeCode(qrData);
+            qrCodeContainer.classList.remove('hidden');
+            
+            // Save QR code to local storage
+            const qrCodes = JSON.parse(localStorage.getItem('qrCodes')) || [];
+            qrCodes.push({
+                table: tableNumber,
+                date: new Date().toISOString()
+            });
+            localStorage.setItem('qrCodes', JSON.stringify(qrCodes));
+            
+            showNotification(`QR code generated for Table ${tableNumber}`);
+        });
+        
+        downloadQRBtn.addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.download = `table-${tableNumberInput.value}-qrcode.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            link.click();
+        });
+        
+        // Functions
+        function addItemToMenu(item) {
+            menuItems.push(item);
+            localStorage.setItem('menuItems', JSON.stringify(menuItems));
+            renderMenuItems();
+            addItemModal.classList.add('hidden');
+            clearItemForm();
+            showNotification('Menu item added successfully!');
+        }
+        
+        function renderMenuItems() {
+            if (menuItems.length === 0) {
+                noItemsMessage.classList.remove('hidden');
+                menuItemsContainer.innerHTML = '';
+                return;
+            }
+            
+            noItemsMessage.classList.add('hidden');
+            menuItemsContainer.innerHTML = '';
+            
+            menuItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex justify-between items-center p-3 border-b';
+                itemElement.innerHTML = `
+                    <div class="flex items-center">
+                        ${item.image ? `<img src="${item.image}" class="w-10 h-10 rounded-full object-cover mr-3">` : 
+                          `<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                            <i class="fas fa-utensils text-gray-500"></i>
+                          </div>`}
+                        <div>
+                            <p class="font-medium">${item.name}</p>
+                            <p class="text-sm text-gray-500">৳${item.price} • ${getCategoryName(item.category)}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="text-gray-400 hover:text-gray-600 edit-item" data-id="${item.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="text-gray-400 hover:text-gray-600 delete-item" data-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <div class="relative">
+                            <button class="text-gray-400 hover:text-gray-600 toggle-visibility" data-id="${item.id}">
+                                <i class="fas ${item.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                            </button>
+                            <span class="absolute -top-1 -right-1 text-xs ${item.visible ? 'text-green-500' : 'text-red-500'}">
+                                <i class="fas ${item.visible ? 'fa-check' : 'fa-times'}"></i>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                menuItemsContainer.appendChild(itemElement);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = parseInt(this.dataset.id);
+                    editMenuItem(itemId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = parseInt(this.dataset.id);
+                    deleteMenuItem(itemId);
+                });
+            });
+            
+            document.querySelectorAll('.toggle-visibility').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = parseInt(this.dataset.id);
+                    toggleItemVisibility(itemId);
+                });
+            });
+        }
+        
+        function editMenuItem(id) {
+            const item = menuItems.find(item => item.id === id);
+            if (!item) return;
+            
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('itemPrice').value = item.price;
+            document.getElementById('itemCategory').value = item.category;
+            document.getElementById('itemDescription').value = item.description || '';
+            
+            // Set a flag that we're editing
+            saveItemBtn.dataset.editingId = id;
+            saveItemBtn.textContent = 'Update Item';
+            
+            addItemModal.classList.remove('hidden');
+        }
+        
+        function deleteMenuItem(id) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                menuItems = menuItems.filter(item => item.id !== id);
+                localStorage.setItem('menuItems', JSON.stringify(menuItems));
+                renderMenuItems();
+                showNotification('Menu item deleted');
+            }
+        }
+        
+        function toggleItemVisibility(id) {
+            const item = menuItems.find(item => item.id === id);
+            if (item) {
+                item.visible = !item.visible;
+                localStorage.setItem('menuItems', JSON.stringify(menuItems));
+                renderMenuItems();
+                showNotification(`Item ${item.visible ? 'shown' : 'hidden'} in menu`);
+            }
+        }
+        
+        function clearItemForm() {
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('itemCategory').value = 'main';
+            document.getElementById('itemDescription').value = '';
+            document.getElementById('itemImage').value = '';
+            delete saveItemBtn.dataset.editingId;
+            saveItemBtn.textContent = 'Save Item';
+        }
+        
+        function getCategoryName(category) {
+            const categories = {
+                'main': 'Main Course',
+                'appetizer': 'Appetizer',
+                'dessert': 'Dessert',
+                'drink': 'Drink'
+            };
+            return categories[category] || category;
+        }
+        
+        function showNotification(message) {
+            const notification = {
+                id: Date.now(),
+                message,
+                date: new Date().toISOString(),
+                read: false
+            };
+            
+            notifications.unshift(notification);
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            updateNotificationBadge();
+            
+            // Show browser notification if permission is granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Orestify Alert', {
+                    body: message,
+                    icon: brandLogoPreview.src || '/favicon.ico'
+                });
+            }
+        }
+        
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            if (unreadCount > 0) {
+                notificationCount.textContent = unreadCount;
+                notificationCount.classList.remove('hidden');
+                notificationBadge.classList.add('animate-pulse');
+            } else {
+                notificationCount.classList.add('hidden');
+                notificationBadge.classList.remove('animate-pulse');
+            }
+        }
+        
+        function applyBranding() {
+            const savedColor = localStorage.getItem('brandColor');
+            const savedLogo = localStorage.getItem('brandLogo');
+            
+            if (savedColor) {
+                brandColorPicker.value = savedColor;
+                document.documentElement.style.setProperty('--color-primary', savedColor);
+            }
+            
+            if (savedLogo) {
+                brandLogoPreview.src = savedLogo;
+                brandLogoPreview.classList.remove('hidden');
+            }
+        }
+        
+        function loadAnalytics() {
+            // Mock data - in a real app, this would come from your backend
+            todayOrders.textContent = Math.floor(Math.random() * 20);
+            
+            const popularItems = ['Chicken Biryani', 'Beef Kebab', 'Vegetable Salad', 'Mango Lassi'];
+            popularItem.textContent = popularItems[Math.floor(Math.random() * popularItems.length)];
+            
+            // Recent activity
+            recentActivity.innerHTML = '';
+            const activities = [
+                'Table 3 ordered Chicken Biryani',
+                'Table 5 ordered Mango Lassi',
+                'New menu item added: Beef Kebab',
+                'Table 2 requested bill'
+            ];
+            
+            activities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center text-gray-700';
+                div.innerHTML = `
+                    <i class="fas fa-circle text-xs text-teal-500 mr-2"></i>
+                    <p>${activity}</p>
+                `;
+                recentActivity.appendChild(div);
+            });
+            
+            // Customer behavior
+            customerBehavior.innerHTML = '';
+            const behaviors = [
+                'Most ordered item: Chicken Biryani (12 times)',
+                'Peak hours: 12:30 PM - 2:00 PM',
+                'Average order value: ৳450',
+                'Repeat customers: 35%'
+            ];
+            
+            behaviors.forEach(behavior => {
+                const div = document.createElement('div');
+                div.className = 'flex items-start text-gray-700 mb-1';
+                div.innerHTML = `
+                    <i class="fas fa-check-circle text-teal-500 mt-1 mr-2 text-sm"></i>
+                    <p>${behavior}</p>
+                `;
+                customerBehavior.appendChild(div);
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            applyBranding();
+            renderMenuItems();
+            loadAnalytics();
+            updateNotificationBadge();
+            
+            // Request notification permission
+            if ('Notification' in window) {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+</body>
+</html>
