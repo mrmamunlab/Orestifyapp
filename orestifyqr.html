@@ -1,0 +1,2449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orestify - Restaurant Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .sidebar-item.active {
+            background-color: rgba(168, 85, 247, 0.1);
+            border-left: 4px solid rgb(168, 85, 247);
+        }
+        .sidebar-item.active i, .sidebar-item.active span {
+            color: rgb(168, 85, 247);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Main Layout -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white shadow-lg flex flex-col">
+            <!-- Logo -->
+            <div class="p-5 border-b">
+                <div class="flex items-center">
+                    <img id="brandLogoPreview" src="" alt="Logo" class="w-10 h-10 rounded-full object-cover mr-3 hidden">
+                    <h1 class="text-xl font-bold text-purple-700">Orestify</h1>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Restaurant Dashboard</p>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1 px-3">
+                    <li>
+                        <a href="#" class="sidebar-item active flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-tachometer-alt w-5 mr-3"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-utensils w-5 mr-3"></i>
+                            <span>Menu Items</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-clipboard-list w-5 mr-3"></i>
+                            <span>Orders</span>
+                            <span id="orderCountBadge" class="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-users w-5 mr-3"></i>
+                            <span>Staff</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-chart-line w-5 mr-3"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-qrcode w-5 mr-3"></i>
+                            <span>QR Codes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors">
+                            <i class="fas fa-cog w-5 mr-3"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- User Profile -->
+            <div class="p-4 border-t">
+                <div class="flex items-center">
+                    <img src="https://ui-avatars.com/api/?name=Restaurant+Manager&background=8b5cf6&color=fff" alt="User" class="w-10 h-10 rounded-full">
+                    <div class="ml-3">
+                        <p class="text-sm font-medium">Restaurant Manager</p>
+                        <p class="text-xs text-gray-500">Manager</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex justify-between items-center px-6 py-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800" id="pageTitle">Dashboard</h2>
+                        <p class="text-sm text-gray-500" id="pageSubtitle">Welcome back! Here's what's happening today.</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <div class="relative" id="notificationContainer">
+                            <button class="text-gray-500 hover:text-purple-700 transition-colors">
+                                <i class="fas fa-bell text-xl"></i>
+                            </button>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                            
+                            <!-- Notification Dropdown -->
+                            <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border py-2 z-20">
+                                <div class="px-4 py-2 border-b">
+                                    <h3 class="font-medium">Notifications</h3>
+                                </div>
+                                <div id="notificationList" class="max-h-64 overflow-y-auto">
+                                    <!-- Notifications will be populated here -->
+                                </div>
+                                <div class="px-4 py-2 border-t text-center">
+                                    <button id="markAllRead" class="text-purple-600 text-sm">Mark all as read</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Menu -->
+                        <div class="relative">
+                            <button class="flex items-center text-sm focus:outline-none">
+                                <img src="https://ui-avatars.com/api/?name=Restaurant+Manager&background=8b5cf6&color=fff" alt="User" class="w-8 h-8 rounded-full">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <!-- Dashboard Page -->
+                <div id="dashboardPage" class="page-content">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Today's Revenue</p>
+                                    <p class="text-2xl font-bold mt-1">৳<span id="todayRevenue">0</span></p>
+                                </div>
+                                <div class="bg-purple-100 p-3 rounded-lg">
+                                    <i class="fas fa-money-bill-wave text-purple-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3"><span id="revenueChange" class="text-green-500">+0%</span> from yesterday</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Today's Orders</p>
+                                    <p class="text-2xl font-bold mt-1"><span id="todayOrders">0</span></p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-lg">
+                                    <i class="fas fa-shopping-bag text-green-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3"><span id="orderChange" class="text-green-500">+0%</span> from yesterday</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Active Tables</p>
+                                    <p class="text-2xl font-bold mt-1"><span id="activeTables">0</span>/<span id="totalTables">0</span></p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-lg">
+                                    <i class="fas fa-utensils text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3"><span id="tableChange" class="text-green-500">+0%</span> from yesterday</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Popular Item</p>
+                                    <p class="text-xl font-bold mt-1" id="popularItem">-</p>
+                                </div>
+                                <div class="bg-yellow-100 p-3 rounded-lg">
+                                    <i class="fas fa-star text-yellow-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3" id="popularItemOrders">0 orders today</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts and Recent Activity -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Recent Orders -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-lg">Recent Orders</h3>
+                                <a href="#" class="text-purple-600 text-sm">View all</a>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div id="recentOrdersList">
+                                    <!-- Orders will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Activity Feed -->
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Activity Feed</h3>
+                            
+                            <div id="activityFeed" class="space-y-4">
+                                <!-- Activity items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu Items Page -->
+                <div id="menuPage" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800">Menu Items</h2>
+                            <p class="text-sm text-gray-500">Manage your restaurant menu</p>
+                        </div>
+                        <button id="addMenuItemBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <!-- Menu Items List -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <div class="p-4 border-b">
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button class="category-filter active bg-purple-600 text-white px-3 py-1 rounded-lg text-sm" data-category="all">All</button>
+                                    <button class="category-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-category="main">Main Course</button>
+                                    <button class="category-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-category="appetizer">Appetizers</button>
+                                    <button class="category-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-category="dessert">Desserts</button>
+                                    <button class="category-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-category="drink">Drinks</button>
+                                </div>
+                                
+                                <div class="relative">
+                                    <input type="text" id="menuSearch" placeholder="Search menu..." class="pl-10 pr-4 py-2 border rounded-lg w-64">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="menuItemsContainer" class="divide-y">
+                            <!-- Menu items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Orders Page -->
+                <div id="ordersPage" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800">Orders</h2>
+                            <p class="text-sm text-gray-500">Manage and track customer orders</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="status-filter active bg-purple-600 text-white px-3 py-1 rounded-lg text-sm" data-status="all">All</button>
+                            <button class="status-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-status="placed">Placed</button>
+                            <button class="status-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-status="confirmed">Confirmed</button>
+                            <button class="status-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-status="preparing">Preparing</button>
+                            <button class="status-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-status="ready">Ready</button>
+                            <button class="status-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-status="completed">Completed</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Orders List -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <div class="p-4 border-b">
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-500">
+                                    Showing <span id="ordersCount">0</span> orders
+                                </div>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center">
+                                        <label class="text-sm text-gray-500 mr-2">Table:</label>
+                                        <select id="tableFilter" class="border rounded-lg px-2 py-1 text-sm">
+                                            <option value="all">All Tables</option>
+                                            <!-- Table options will be populated here -->
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="relative">
+                                        <input type="text" id="orderSearch" placeholder="Search orders..." class="pl-10 pr-4 py-2 border rounded-lg w-64">
+                                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="ordersContainer" class="divide-y">
+                            <!-- Orders will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Staff Page -->
+                <div id="staffPage" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800">Staff Management</h2>
+                            <p class="text-sm text-gray-500">Manage your restaurant staff</p>
+                        </div>
+                        <button id="addStaffBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add Staff
+                        </button>
+                    </div>
+                    
+                    <!-- Staff List -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <div class="p-4 border-b">
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button class="role-filter active bg-purple-600 text-white px-3 py-1 rounded-lg text-sm" data-role="all">All</button>
+                                    <button class="role-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-role="manager">Managers</button>
+                                    <button class="role-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-role="waiter">Waiters</button>
+                                    <button class="role-filter bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm" data-role="kitchen">Kitchen</button>
+                                </div>
+                                
+                                <div class="relative">
+                                    <input type="text" id="staffSearch" placeholder="Search staff..." class="pl-10 pr-4 py-2 border rounded-lg w-64">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="staffContainer" class="divide-y">
+                            <!-- Staff members will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Page -->
+                <div id="analyticsPage" class="page-content hidden">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">Analytics</h2>
+                        <p class="text-sm text-gray-500">Insights into your restaurant performance</p>
+                    </div>
+                    
+                    <!-- Date Range Selector -->
+                    <div class="bg-white rounded-xl shadow p-4 mb-6">
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                                <input type="date" id="fromDate" class="border rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                                <input type="date" id="toDate" class="border rounded-lg px-3 py-2">
+                            </div>
+                            <div class="flex items-end">
+                                <button id="applyDateRange" class="bg-purple-600 text-white px-4 py-2 rounded-lg">Apply</button>
+                            </div>
+                            <div class="ml-auto">
+                                <button id="exportAnalytics" class="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
+                                    <i class="fas fa-file-export mr-2"></i> Export Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analytics Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Total Revenue</p>
+                                    <p class="text-2xl font-bold mt-1">৳<span id="totalRevenue">0</span></p>
+                                </div>
+                                <div class="bg-purple-100 p-3 rounded-lg">
+                                    <i class="fas fa-money-bill-wave text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Total Orders</p>
+                                    <p class="text-2xl font-bold mt-1"><span id="totalOrders">0</span></p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-lg">
+                                    <i class="fas fa-shopping-bag text-green-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Average Order Value</p>
+                                    <p class="text-2xl font-bold mt-1">৳<span id="avgOrderValue">0</span></p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-lg">
+                                    <i class="fas fa-chart-bar text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500">Busiest Hour</p>
+                                    <p class="text-xl font-bold mt-1" id="busiestHour">-</p>
+                                </div>
+                                <div class="bg-yellow-100 p-3 rounded-lg">
+                                    <i class="fas fa-clock text-yellow-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Revenue Trend</h3>
+                            <div id="revenueChart" class="h-64 flex items-center justify-center text-gray-500">
+                                Revenue chart will be displayed here
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Order Status Distribution</h3>
+                            <div id="orderStatusChart" class="h-64 flex items-center justify-center text-gray-500">
+                                Order status chart will be displayed here
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Popular Items -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="font-semibold text-lg mb-4">Popular Menu Items</h3>
+                        <div id="popularItemsList" class="space-y-3">
+                            <!-- Popular items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- QR Codes Page -->
+                <div id="qrPage" class="page-content hidden">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">QR Code Generator</h2>
+                        <p class="text-sm text-gray-500">Generate QR codes for your tables</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- QR Generator -->
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Generate New QR Code</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Table Number</label>
+                                    <input type="number" id="tableNumber" placeholder="Enter table number" class="w-full p-3 border rounded-lg">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Menu URL</label>
+                                    <input type="text" id="menuUrl" placeholder="Enter menu URL" class="w-full p-3 border rounded-lg" value="https://orestify.com/menu">
+                                </div>
+                                
+                                <button id="generateQRBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-qrcode mr-2"></i> Generate QR Code
+                                </button>
+                                
+                                <div id="qrCodeContainer" class="flex flex-col items-center hidden">
+                                    <canvas id="qrCanvas" class="border p-4 rounded-lg mb-4"></canvas>
+                                    <button id="downloadQRBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
+                                        <i class="fas fa-download mr-2"></i> Download QR Code
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Existing QR Codes -->
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-lg">Existing QR Codes</h3>
+                                <button id="refreshQRCodes" class="text-purple-600">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="existingQRCodes" class="space-y-4 max-h-96 overflow-y-auto">
+                                <!-- Existing QR codes will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Page -->
+                <div id="settingsPage" class="page-content hidden">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">Settings</h2>
+                        <p class="text-sm text-gray-500">Manage your restaurant settings</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Branding Settings -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Branding</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Restaurant Name</label>
+                                    <input type="text" id="restaurantName" placeholder="Enter restaurant name" class="w-full p-3 border rounded-lg" value="Orestify Restaurant">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload Logo</label>
+                                    <div class="flex items-center">
+                                        <label for="logoUpload" class="cursor-pointer bg-gray-100 p-3 rounded-lg border border-dashed border-gray-300 flex items-center">
+                                            <i class="fas fa-upload mr-2"></i>Choose File
+                                        </label>
+                                        <input id="logoUpload" type="file" accept="image/*" class="hidden">
+                                        <span id="fileName" class="ml-3 text-sm text-gray-500">No file chosen</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Recommended size: 200x200px, max 250KB</p>
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <img id="brandLogoPreview" src="" alt="Logo" class="w-16 h-16 rounded-lg object-cover mr-4 hidden">
+                                    <div>
+                                        <p class="text-sm font-medium">Current Logo</p>
+                                        <p class="text-xs text-gray-500">Preview of your current logo</p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Brand Color</label>
+                                    <input type="color" id="brandColorPicker" value="#8b5cf6" class="h-12 w-full rounded-lg cursor-pointer">
+                                </div>
+                                
+                                <button id="saveBranding" class="bg-purple-600 text-white px-4 py-2 rounded-lg">Save Branding</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Restaurant Details -->
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <h3 class="font-semibold text-lg mb-4">Restaurant Details</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                                    <input type="email" id="contactEmail" placeholder="Enter contact email" class="w-full p-3 border rounded-lg" value="contact@orestify.com">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                    <input type="tel" id="phoneNumber" placeholder="Enter phone number" class="w-full p-3 border rounded-lg" value="+880 1234 567890">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                    <textarea id="restaurantAddress" rows="3" class="w-full p-3 border rounded-lg">123 Restaurant Street, Dhaka, Bangladesh</textarea>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Opening Hours</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="time" id="openingTime" class="p-2 border rounded-lg" value="10:00">
+                                        <input type="time" id="closingTime" class="p-2 border rounded-lg" value="22:00">
+                                    </div>
+                                </div>
+                                
+                                <button id="saveRestaurantDetails" class="w-full bg-purple-600 text-white py-2 rounded-lg">Save Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Menu Item Modal -->
+    <div id="addMenuItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-6 w-11/12 max-w-2xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-lg" id="menuItemModalTitle">Add Menu Item</h3>
+                <button id="closeMenuItemModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                        <input type="text" id="itemName" placeholder="e.g. Chicken Biryani" class="w-full p-3 border rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Price (৳)</label>
+                        <input type="number" id="itemPrice" placeholder="e.g. 250" class="w-full p-3 border rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select id="itemCategory" class="w-full p-3 border rounded-lg">
+                            <option value="main">Main Course</option>
+                            <option value="appetizer">Appetizer</option>
+                            <option value="dessert">Dessert</option>
+                            <option value="drink">Drink</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="itemDescription" rows="3" class="w-full p-3 border rounded-lg" placeholder="Describe the menu item..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <div id="imagePreviewContainer" class="mb-3 hidden">
+                                <img id="imagePreview" class="mx-auto max-h-40 rounded-lg">
+                            </div>
+                            <input type="file" id="itemImage" accept="image/*" class="hidden">
+                            <label for="itemImage" class="cursor-pointer text-purple-600 hover:text-purple-800">
+                                <i class="fas fa-upload text-2xl mb-2 block"></i>
+                                <span>Click to upload image</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-2">JPG, PNG or GIF, max 250KB</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="itemAvailable" class="rounded text-purple-600 mr-2" checked>
+                            <span class="text-sm text-gray-700">Item is available</span>
+                        </label>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button id="saveMenuItemBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg">
+                            Save Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Staff Modal -->
+    <div id="addStaffModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-6 w-11/12 max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-lg" id="staffModalTitle">Add Staff Member</h3>
+                <button id="closeStaffModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="staffName" placeholder="Enter staff name" class="w-full p-3 border rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="staffEmail" placeholder="Enter email address" class="w-full p-3 border rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select id="staffRole" class="w-full p-3 border rounded-lg">
+                        <option value="waiter">Waiter</option>
+                        <option value="kitchen">Kitchen Staff</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="tel" id="staffPhone" placeholder="Enter phone number" class="w-full p-3 border rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="staffActive" class="rounded text-purple-600 mr-2" checked>
+                        <span class="text-sm text-gray-700">Staff is active</span>
+                    </label>
+                </div>
+                
+                <button id="saveStaffBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg">
+                    Save Staff Member
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-6 w-11/12 max-w-2xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-lg">Order Details</h3>
+                <button id="closeOrderModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Order Header -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Order ID</p>
+                        <p class="font-medium" id="orderId">#12345</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Table Number</p>
+                        <p class="font-medium" id="orderTable">5</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        <p class="font-medium">
+                            <span id="orderStatusBadge" class="px-2 py-1 rounded-full text-xs"></span>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Order Items -->
+                <div>
+                    <h4 class="font-medium mb-2">Order Items</h4>
+                    <div id="orderItemsList" class="space-y-3">
+                        <!-- Order items will be populated here -->
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t">
+                        <p class="font-medium">Total</p>
+                        <p class="font-bold text-lg">৳<span id="orderTotal">0</span></p>
+                    </div>
+                </div>
+                
+                <!-- Order Actions -->
+                <div>
+                    <h4 class="font-medium mb-2">Update Status</h4>
+                    <div class="flex space-x-2">
+                        <button class="status-action-btn bg-purple-600 text-white px-4 py-2 rounded-lg text-sm" data-status="confirmed">Confirm</button>
+                        <button class="status-action-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm" data-status="preparing">Start Preparing</button>
+                        <button class="status-action-btn bg-green-600 text-white px-4 py-2 rounded-lg text-sm" data-status="ready">Mark as Ready</button>
+                        <button class="status-action-btn bg-gray-600 text-white px-4 py-2 rounded-lg text-sm" data-status="completed">Complete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Configuration
+        // Replace with your actual Supabase credentials
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-anon-key';
+        
+        // Initialize Supabase client
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Global state
+        let currentUser = {
+            id: 1,
+            name: 'Restaurant Manager',
+            role: 'manager',
+            restaurantId: 1
+        };
+        
+        let menuItems = [];
+        let orders = [];
+        let staffMembers = [];
+        let notifications = [];
+        let currentEditingItemId = null;
+        let currentEditingStaffId = null;
+        let currentViewingOrderId = null;
+        
+        // DOM Elements
+        const pageContents = document.querySelectorAll('.page-content');
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+        
+        // Dashboard elements
+        const todayRevenue = document.getElementById('todayRevenue');
+        const todayOrders = document.getElementById('todayOrders');
+        const activeTables = document.getElementById('activeTables');
+        const totalTables = document.getElementById('totalTables');
+        const popularItem = document.getElementById('popularItem');
+        const popularItemOrders = document.getElementById('popularItemOrders');
+        const recentOrdersList = document.getElementById('recentOrdersList');
+        const activityFeed = document.getElementById('activityFeed');
+        
+        // Menu elements
+        const addMenuItemBtn = document.getElementById('addMenuItemBtn');
+        const menuItemsContainer = document.getElementById('menuItemsContainer');
+        const categoryFilters = document.querySelectorAll('.category-filter');
+        const menuSearch = document.getElementById('menuSearch');
+        
+        // Orders elements
+        const ordersContainer = document.getElementById('ordersContainer');
+        const statusFilters = document.querySelectorAll('.status-filter');
+        const tableFilter = document.getElementById('tableFilter');
+        const orderSearch = document.getElementById('orderSearch');
+        const ordersCount = document.getElementById('ordersCount');
+        
+        // Staff elements
+        const addStaffBtn = document.getElementById('addStaffBtn');
+        const staffContainer = document.getElementById('staffContainer');
+        const roleFilters = document.querySelectorAll('.role-filter');
+        const staffSearch = document.getElementById('staffSearch');
+        
+        // Analytics elements
+        const fromDate = document.getElementById('fromDate');
+        const toDate = document.getElementById('toDate');
+        const applyDateRange = document.getElementById('applyDateRange');
+        const exportAnalytics = document.getElementById('exportAnalytics');
+        const totalRevenue = document.getElementById('totalRevenue');
+        const totalOrders = document.getElementById('totalOrders');
+        const avgOrderValue = document.getElementById('avgOrderValue');
+        const busiestHour = document.getElementById('busiestHour');
+        const popularItemsList = document.getElementById('popularItemsList');
+        
+        // QR Code elements
+        const tableNumber = document.getElementById('tableNumber');
+        const menuUrl = document.getElementById('menuUrl');
+        const generateQRBtn = document.getElementById('generateQRBtn');
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const downloadQRBtn = document.getElementById('downloadQRBtn');
+        const existingQRCodes = document.getElementById('existingQRCodes');
+        const refreshQRCodes = document.getElementById('refreshQRCodes');
+        
+        // Settings elements
+        const restaurantName = document.getElementById('restaurantName');
+        const logoUpload = document.getElementById('logoUpload');
+        const brandLogoPreview = document.getElementById('brandLogoPreview');
+        const fileName = document.getElementById('fileName');
+        const brandColorPicker = document.getElementById('brandColorPicker');
+        const saveBranding = document.getElementById('saveBranding');
+        const contactEmail = document.getElementById('contactEmail');
+        const phoneNumber = document.getElementById('phoneNumber');
+        const restaurantAddress = document.getElementById('restaurantAddress');
+        const openingTime = document.getElementById('openingTime');
+        const closingTime = document.getElementById('closingTime');
+        const saveRestaurantDetails = document.getElementById('saveRestaurantDetails');
+        
+        // Notification elements
+        const notificationContainer = document.getElementById('notificationContainer');
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationList = document.getElementById('notificationList');
+        const markAllRead = document.getElementById('markAllRead');
+        const orderCountBadge = document.getElementById('orderCountBadge');
+        
+        // Modal elements
+        const addMenuItemModal = document.getElementById('addMenuItemModal');
+        const closeMenuItemModal = document.getElementById('closeMenuItemModal');
+        const menuItemModalTitle = document.getElementById('menuItemModalTitle');
+        const itemName = document.getElementById('itemName');
+        const itemPrice = document.getElementById('itemPrice');
+        const itemCategory = document.getElementById('itemCategory');
+        const itemDescription = document.getElementById('itemDescription');
+        const itemImage = document.getElementById('itemImage');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const itemAvailable = document.getElementById('itemAvailable');
+        const saveMenuItemBtn = document.getElementById('saveMenuItemBtn');
+        
+        const addStaffModal = document.getElementById('addStaffModal');
+        const closeStaffModal = document.getElementById('closeStaffModal');
+        const staffModalTitle = document.getElementById('staffModalTitle');
+        const staffName = document.getElementById('staffName');
+        const staffEmail = document.getElementById('staffEmail');
+        const staffRole = document.getElementById('staffRole');
+        const staffPhone = document.getElementById('staffPhone');
+        const staffActive = document.getElementById('staffActive');
+        const saveStaffBtn = document.getElementById('saveStaffBtn');
+        
+        const orderDetailsModal = document.getElementById('orderDetailsModal');
+        const closeOrderModal = document.getElementById('closeOrderModal');
+        const orderId = document.getElementById('orderId');
+        const orderTable = document.getElementById('orderTable');
+        const orderStatusBadge = document.getElementById('orderStatusBadge');
+        const orderItemsList = document.getElementById('orderItemsList');
+        const orderTotal = document.getElementById('orderTotal');
+        const statusActionBtns = document.querySelectorAll('.status-action-btn');
+        
+        // Initialize QR Code
+        const qrCode = new QRCode(qrCanvas, {
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+        });
+        
+        function initializeApp() {
+            // Set default dates for analytics
+            const today = new Date();
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(today.getDate() - 7);
+            
+            fromDate.valueAsDate = oneWeekAgo;
+            toDate.valueAsDate = today;
+            
+            // Load initial data
+            loadDashboardData();
+            loadMenuItems();
+            loadOrders();
+            loadStaff();
+            loadNotifications();
+            loadExistingQRCodes();
+            applyBranding();
+            
+            // Set up real-time subscriptions
+            setupRealtimeSubscriptions();
+        }
+        
+        function setupEventListeners() {
+            // Sidebar navigation
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Show the corresponding page
+                    const pageId = this.textContent.trim().toLowerCase().replace(' ', '') + 'Page';
+                    showPage(pageId);
+                });
+            });
+            
+            // Notification dropdown
+            notificationContainer.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('hidden');
+            });
+            
+            // Mark all notifications as read
+            markAllRead.addEventListener('click', function() {
+                markAllNotificationsAsRead();
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function() {
+                notificationDropdown.classList.add('hidden');
+            });
+            
+            // Menu management
+            addMenuItemBtn.addEventListener('click', openAddMenuItemModal);
+            closeMenuItemModal.addEventListener('click', closeAddMenuItemModal);
+            
+            // Image preview for menu item
+            itemImage.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (max 250KB)
+                    if (file.size > 250 * 1024) {
+                        alert('Image size must be less than 250KB');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        imagePreview.src = event.target.result;
+                        imagePreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            saveMenuItemBtn.addEventListener('click', saveMenuItem);
+            
+            // Category filters
+            categoryFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    categoryFilters.forEach(f => f.classList.remove('active', 'bg-purple-600', 'text-white'));
+                    categoryFilters.forEach(f => f.classList.add('bg-gray-200', 'text-gray-700'));
+                    
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    this.classList.add('active', 'bg-purple-600', 'text-white');
+                    
+                    const category = this.dataset.category;
+                    filterMenuItems(category);
+                });
+            });
+            
+            // Menu search
+            menuSearch.addEventListener('input', function() {
+                filterMenuItems();
+            });
+            
+            // Staff management
+            addStaffBtn.addEventListener('click', openAddStaffModal);
+            closeStaffModal.addEventListener('click', closeAddStaffModal);
+            saveStaffBtn.addEventListener('click', saveStaffMember);
+            
+            // Role filters
+            roleFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    roleFilters.forEach(f => f.classList.remove('active', 'bg-purple-600', 'text-white'));
+                    roleFilters.forEach(f => f.classList.add('bg-gray-200', 'text-gray-700'));
+                    
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    this.classList.add('active', 'bg-purple-600', 'text-white');
+                    
+                    const role = this.dataset.role;
+                    filterStaff(role);
+                });
+            });
+            
+            // Staff search
+            staffSearch.addEventListener('input', function() {
+                filterStaff();
+            });
+            
+            // Orders management
+            statusFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    statusFilters.forEach(f => f.classList.remove('active', 'bg-purple-600', 'text-white'));
+                    statusFilters.forEach(f => f.classList.add('bg-gray-200', 'text-gray-700'));
+                    
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    this.classList.add('active', 'bg-purple-600', 'text-white');
+                    
+                    const status = this.dataset.status;
+                    filterOrders(status);
+                });
+            });
+            
+            // Order search
+            orderSearch.addEventListener('input', function() {
+                filterOrders();
+            });
+            
+            // Table filter
+            tableFilter.addEventListener('change', function() {
+                filterOrders();
+            });
+            
+            // Order details modal
+            closeOrderModal.addEventListener('click', closeOrderDetailsModal);
+            
+            // Status action buttons
+            statusActionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const status = this.dataset.status;
+                    updateOrderStatus(status);
+                });
+            });
+            
+            // Analytics
+            applyDateRange.addEventListener('click', loadAnalyticsData);
+            exportAnalytics.addEventListener('click', exportAnalyticsData);
+            
+            // QR Code generation
+            generateQRBtn.addEventListener('click', generateQRCode);
+            downloadQRBtn.addEventListener('click', downloadQRCode);
+            refreshQRCodes.addEventListener('click', loadExistingQRCodes);
+            
+            // Settings
+            logoUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    fileName.textContent = file.name;
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        brandLogoPreview.src = event.target.result;
+                        brandLogoPreview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            saveBranding.addEventListener('click', saveBrandingSettings);
+            saveRestaurantDetails.addEventListener('click', saveRestaurantSettings);
+        }
+        
+        function showPage(pageId) {
+            // Hide all pages
+            pageContents.forEach(page => page.classList.add('hidden'));
+            
+            // Show the selected page
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            // Update page title and subtitle
+            updatePageTitle(pageId);
+            
+            // Load specific data if needed
+            if (pageId === 'analyticsPage') {
+                loadAnalyticsData();
+            }
+        }
+        
+        function updatePageTitle(pageId) {
+            const titles = {
+                'dashboardPage': { title: 'Dashboard', subtitle: 'Welcome back! Here\'s what\'s happening today.' },
+                'menuPage': { title: 'Menu Items', subtitle: 'Manage your restaurant menu' },
+                'ordersPage': { title: 'Orders', subtitle: 'Manage and track customer orders' },
+                'staffPage': { title: 'Staff Management', subtitle: 'Manage your restaurant staff' },
+                'analyticsPage': { title: 'Analytics', subtitle: 'Insights into your restaurant performance' },
+                'qrPage': { title: 'QR Code Generator', subtitle: 'Generate QR codes for your tables' },
+                'settingsPage': { title: 'Settings', subtitle: 'Manage your restaurant settings' }
+            };
+            
+            const pageInfo = titles[pageId] || { title: 'Page', subtitle: '' };
+            pageTitle.textContent = pageInfo.title;
+            pageSubtitle.textContent = pageInfo.subtitle;
+        }
+        
+        // Data Loading Functions
+        async function loadDashboardData() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            // Mock data for dashboard
+            todayRevenue.textContent = '12,540';
+            todayOrders.textContent = '24';
+            activeTables.textContent = '8';
+            totalTables.textContent = '15';
+            popularItem.textContent = 'Chicken Biryani';
+            popularItemOrders.textContent = '8 orders today';
+            
+            // Load recent orders
+            const recentOrders = [
+                { id: 12345, table: 5, items: 'Chicken Biryani, Naan', total: 450, status: 'preparing', time: '5 min ago' },
+                { id: 12344, table: 3, items: 'Beef Kebab, Salad', total: 320, status: 'ready', time: '12 min ago' },
+                { id: 12343, table: 8, items: 'Pasta, Garlic Bread', total: 280, status: 'completed', time: '25 min ago' },
+                { id: 12342, table: 12, items: 'Pizza, Coke', total: 550, status: 'confirmed', time: '35 min ago' }
+            ];
+            
+            recentOrdersList.innerHTML = '';
+            recentOrders.forEach(order => {
+                const orderElement = createOrderElement(order, true);
+                recentOrdersList.appendChild(orderElement);
+            });
+            
+            // Load activity feed
+            const activities = [
+                { type: 'order', message: 'New order #12345 placed for Table 5', time: '5 minutes ago' },
+                { type: 'menu', message: 'Menu item "Chicken Biryani" updated', time: '12 minutes ago' },
+                { type: 'staff', message: 'Staff member John Doe added', time: '1 hour ago' },
+                { type: 'system', message: 'System backup completed', time: '2 hours ago' }
+            ];
+            
+            activityFeed.innerHTML = '';
+            activities.forEach(activity => {
+                const activityElement = document.createElement('div');
+                activityElement.className = 'flex items-start';
+                activityElement.innerHTML = `
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-2 h-2 rounded-full ${getActivityColor(activity.type)}"></div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm">${activity.message}</p>
+                        <p class="text-xs text-gray-500 mt-1">${activity.time}</p>
+                    </div>
+                `;
+                activityFeed.appendChild(activityElement);
+            });
+        }
+        
+        function getActivityColor(type) {
+            const colors = {
+                'order': 'bg-purple-500',
+                'menu': 'bg-blue-500',
+                'staff': 'bg-green-500',
+                'system': 'bg-gray-500'
+            };
+            return colors[type] || 'bg-gray-500';
+        }
+        
+        async function loadMenuItems() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            menuItems = [
+                { id: 1, name: 'Chicken Biryani', price: 250, category: 'main', description: 'Fragrant basmati rice with tender chicken and aromatic spices', image: null, available: true },
+                { id: 2, name: 'Beef Kebab', price: 180, category: 'appetizer', description: 'Grilled minced beef with herbs and spices', image: null, available: true },
+                { id: 3, name: 'Chocolate Lava Cake', price: 120, category: 'dessert', description: 'Warm chocolate cake with a molten center', image: null, available: true },
+                { id: 4, name: 'Mango Lassi', price: 80, category: 'drink', description: 'Refreshing yogurt drink with mango', image: null, available: true },
+                { id: 5, name: 'Vegetable Pasta', price: 200, category: 'main', description: 'Pasta with fresh vegetables in tomato sauce', image: null, available: false }
+            ];
+            
+            renderMenuItems();
+        }
+        
+        function renderMenuItems() {
+            menuItemsContainer.innerHTML = '';
+            
+            if (menuItems.length === 0) {
+                menuItemsContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-utensils text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No menu items found</p>
+                        <p class="text-sm text-gray-400 mt-1">Add your first menu item to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            menuItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-4 hover:bg-gray-50 transition-colors';
+                itemElement.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mr-4">
+                            ${item.image ? 
+                                `<img src="${item.image}" class="w-full h-full object-cover rounded-lg">` : 
+                                `<i class="fas fa-utensils text-gray-400 text-xl"></i>`
+                            }
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-medium">${item.name}</h4>
+                                    <p class="text-sm text-gray-500 mt-1">${item.description}</p>
+                                    <div class="flex items-center mt-2">
+                                        <span class="text-purple-600 font-bold">৳${item.price}</span>
+                                        <span class="mx-2 text-gray-300">•</span>
+                                        <span class="text-xs px-2 py-1 rounded-full ${getCategoryColor(item.category)}">${getCategoryName(item.category)}</span>
+                                        <span class="mx-2 text-gray-300">•</span>
+                                        <span class="text-xs ${item.available ? 'text-green-600' : 'text-red-600'}">
+                                            ${item.available ? 'Available' : 'Unavailable'}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button class="edit-menu-item text-purple-600 hover:text-purple-800" data-id="${item.id}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-menu-item text-red-600 hover:text-red-800" data-id="${item.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                menuItemsContainer.appendChild(itemElement);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-menu-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = parseInt(this.dataset.id);
+                    editMenuItem(itemId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-menu-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = parseInt(this.dataset.id);
+                    deleteMenuItem(itemId);
+                });
+            });
+        }
+        
+        function getCategoryName(category) {
+            const categories = {
+                'main': 'Main Course',
+                'appetizer': 'Appetizer',
+                'dessert': 'Dessert',
+                'drink': 'Drink'
+            };
+            return categories[category] || category;
+        }
+        
+        function getCategoryColor(category) {
+            const colors = {
+                'main': 'bg-purple-100 text-purple-800',
+                'appetizer': 'bg-blue-100 text-blue-800',
+                'dessert': 'bg-pink-100 text-pink-800',
+                'drink': 'bg-green-100 text-green-800'
+            };
+            return colors[category] || 'bg-gray-100 text-gray-800';
+        }
+        
+        function filterMenuItems(category = 'all') {
+            let filteredItems = menuItems;
+            
+            // Filter by category
+            if (category !== 'all') {
+                filteredItems = filteredItems.filter(item => item.category === category);
+            }
+            
+            // Filter by search term
+            const searchTerm = menuSearch.value.toLowerCase();
+            if (searchTerm) {
+                filteredItems = filteredItems.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm) || 
+                    item.description.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Render filtered items
+            if (filteredItems.length === 0) {
+                menuItemsContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No menu items match your search</p>
+                    </div>
+                `;
+            } else {
+                menuItemsContainer.innerHTML = '';
+                filteredItems.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'p-4 hover:bg-gray-50 transition-colors';
+                    itemElement.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mr-4">
+                                ${item.image ? 
+                                    `<img src="${item.image}" class="w-full h-full object-cover rounded-lg">` : 
+                                    `<i class="fas fa-utensils text-gray-400 text-xl"></i>`
+                                }
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h4 class="font-medium">${item.name}</h4>
+                                        <p class="text-sm text-gray-500 mt-1">${item.description}</p>
+                                        <div class="flex items-center mt-2">
+                                            <span class="text-purple-600 font-bold">৳${item.price}</span>
+                                            <span class="mx-2 text-gray-300">•</span>
+                                            <span class="text-xs px-2 py-1 rounded-full ${getCategoryColor(item.category)}">${getCategoryName(item.category)}</span>
+                                            <span class="mx-2 text-gray-300">•</span>
+                                            <span class="text-xs ${item.available ? 'text-green-600' : 'text-red-600'}">
+                                                ${item.available ? 'Available' : 'Unavailable'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex space-x-2">
+                                        <button class="edit-menu-item text-purple-600 hover:text-purple-800" data-id="${item.id}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="delete-menu-item text-red-600 hover:text-red-800" data-id="${item.id}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    menuItemsContainer.appendChild(itemElement);
+                });
+                
+                // Re-add event listeners to action buttons
+                document.querySelectorAll('.edit-menu-item').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const itemId = parseInt(this.dataset.id);
+                        editMenuItem(itemId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-menu-item').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const itemId = parseInt(this.dataset.id);
+                        deleteMenuItem(itemId);
+                    });
+                });
+            }
+        }
+        
+        async function loadOrders() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            orders = [
+                { id: 12345, table: 5, items: [{ name: 'Chicken Biryani', price: 250, quantity: 1 }, { name: 'Naan', price: 20, quantity: 2 }], total: 290, status: 'placed', time: '2023-06-15T14:30:00Z', pickupCode: 'A1B2C3' },
+                { id: 12344, table: 3, items: [{ name: 'Beef Kebab', price: 180, quantity: 2 }, { name: 'Salad', price: 80, quantity: 1 }], total: 440, status: 'confirmed', time: '2023-06-15T14:15:00Z', pickupCode: 'D4E5F6' },
+                { id: 12343, table: 8, items: [{ name: 'Pasta', price: 200, quantity: 1 }, { name: 'Garlic Bread', price: 80, quantity: 1 }], total: 280, status: 'preparing', time: '2023-06-15T13:45:00Z', pickupCode: 'G7H8I9' },
+                { id: 12342, table: 12, items: [{ name: 'Pizza', price: 450, quantity: 1 }, { name: 'Coke', price: 30, quantity: 2 }], total: 510, status: 'ready', time: '2023-06-15T13:20:00Z', pickupCode: 'J0K1L2' },
+                { id: 12341, table: 7, items: [{ name: 'Burger', price: 180, quantity: 2 }, { name: 'Fries', price: 60, quantity: 1 }], total: 420, status: 'completed', time: '2023-06-15T12:50:00Z', pickupCode: 'M3N4O5' }
+            ];
+            
+            // Update table filter options
+            updateTableFilter();
+            
+            renderOrders();
+        }
+        
+        function updateTableFilter() {
+            // Get unique table numbers from orders
+            const tables = [...new Set(orders.map(order => order.table))].sort((a, b) => a - b);
+            
+            // Clear existing options except "All Tables"
+            while (tableFilter.children.length > 1) {
+                tableFilter.removeChild(tableFilter.lastChild);
+            }
+            
+            // Add table options
+            tables.forEach(table => {
+                const option = document.createElement('option');
+                option.value = table;
+                option.textContent = `Table ${table}`;
+                tableFilter.appendChild(option);
+            });
+        }
+        
+        function renderOrders() {
+            ordersContainer.innerHTML = '';
+            ordersCount.textContent = orders.length;
+            
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No orders found</p>
+                        <p class="text-sm text-gray-400 mt-1">Orders will appear here when customers place them</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            orders.forEach(order => {
+                const orderElement = createOrderElement(order);
+                ordersContainer.appendChild(orderElement);
+            });
+        }
+        
+        function createOrderElement(order, compact = false) {
+            const orderElement = document.createElement('div');
+            orderElement.className = `p-4 hover:bg-gray-50 transition-colors ${compact ? 'border-b' : ''}`;
+            
+            const statusColors = {
+                'placed': 'bg-gray-100 text-gray-800',
+                'confirmed': 'bg-blue-100 text-blue-800',
+                'preparing': 'bg-yellow-100 text-yellow-800',
+                'ready': 'bg-green-100 text-green-800',
+                'completed': 'bg-purple-100 text-purple-800'
+            };
+            
+            const statusText = {
+                'placed': 'Placed',
+                'confirmed': 'Confirmed',
+                'preparing': 'Preparing',
+                'ready': 'Ready',
+                'completed': 'Completed'
+            };
+            
+            if (compact) {
+                orderElement.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Order #${order.id}</p>
+                            <p class="text-sm text-gray-500">Table ${order.table} • ${order.items.length} items</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-bold">৳${order.total}</span>
+                            <span class="text-xs px-2 py-1 rounded-full ${statusColors[order.status]}">${statusText[order.status]}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                orderElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-4">
+                                <div>
+                                    <p class="font-medium">Order #${order.id}</p>
+                                    <p class="text-sm text-gray-500">Table ${order.table}</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded-full ${statusColors[order.status]}">${statusText[order.status]}</span>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-700">${order.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}</p>
+                                <p class="text-sm text-gray-500 mt-1">Pickup code: <span class="font-mono">${order.pickupCode}</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col items-end space-y-2">
+                            <p class="font-bold text-lg">৳${order.total}</p>
+                            <p class="text-sm text-gray-500">${formatTime(order.time)}</p>
+                            <button class="view-order-details text-purple-600 hover:text-purple-800 text-sm" data-id="${order.id}">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (!compact) {
+                // Add event listener to view details button
+                const viewDetailsBtn = orderElement.querySelector('.view-order-details');
+                viewDetailsBtn.addEventListener('click', function() {
+                    const orderId = parseInt(this.dataset.id);
+                    viewOrderDetails(orderId);
+                });
+            }
+            
+            return orderElement;
+        }
+        
+        function formatTime(timeString) {
+            const date = new Date(timeString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hr ago`;
+            return `${diffDays} day ago`;
+        }
+        
+        function filterOrders(status = 'all') {
+            let filteredOrders = orders;
+            
+            // Filter by status
+            if (status !== 'all') {
+                filteredOrders = filteredOrders.filter(order => order.status === status);
+            }
+            
+            // Filter by table
+            const tableValue = tableFilter.value;
+            if (tableValue !== 'all') {
+                filteredOrders = filteredOrders.filter(order => order.table === parseInt(tableValue));
+            }
+            
+            // Filter by search term
+            const searchTerm = orderSearch.value.toLowerCase();
+            if (searchTerm) {
+                filteredOrders = filteredOrders.filter(order => 
+                    order.id.toString().includes(searchTerm) || 
+                    order.pickupCode.toLowerCase().includes(searchTerm) ||
+                    order.items.some(item => item.name.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Update orders count
+            ordersCount.textContent = filteredOrders.length;
+            
+            // Render filtered orders
+            if (filteredOrders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No orders match your search</p>
+                    </div>
+                `;
+            } else {
+                ordersContainer.innerHTML = '';
+                filteredOrders.forEach(order => {
+                    const orderElement = createOrderElement(order);
+                    ordersContainer.appendChild(orderElement);
+                });
+            }
+        }
+        
+        async function loadStaff() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            staffMembers = [
+                { id: 1, name: 'John Doe', email: 'john@orestify.com', role: 'manager', phone: '+880 1234 567890', active: true },
+                { id: 2, name: 'Jane Smith', email: 'jane@orestify.com', role: 'waiter', phone: '+880 1234 567891', active: true },
+                { id: 3, name: 'Mike Johnson', email: 'mike@orestify.com', role: 'kitchen', phone: '+880 1234 567892', active: true },
+                { id: 4, name: 'Sarah Williams', email: 'sarah@orestify.com', role: 'waiter', phone: '+880 1234 567893', active: false }
+            ];
+            
+            renderStaff();
+        }
+        
+        function renderStaff() {
+            staffContainer.innerHTML = '';
+            
+            if (staffMembers.length === 0) {
+                staffContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No staff members found</p>
+                        <p class="text-sm text-gray-400 mt-1">Add your first staff member to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            staffMembers.forEach(staff => {
+                const staffElement = document.createElement('div');
+                staffElement.className = 'p-4 hover:bg-gray-50 transition-colors';
+                staffElement.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-medium">${staff.name}</h4>
+                                    <p class="text-sm text-gray-500 mt-1">${staff.email}</p>
+                                    <div class="flex items-center mt-2">
+                                        <span class="text-xs px-2 py-1 rounded-full ${getRoleColor(staff.role)}">${getRoleName(staff.role)}</span>
+                                        <span class="mx-2 text-gray-300">•</span>
+                                        <span class="text-xs ${staff.active ? 'text-green-600' : 'text-red-600'}">
+                                            ${staff.active ? 'Active' : 'Inactive'}
+                                        </span>
+                                        <span class="mx-2 text-gray-300">•</span>
+                                        <span class="text-xs text-gray-500">${staff.phone}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button class="edit-staff text-purple-600 hover:text-purple-800" data-id="${staff.id}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-staff text-red-600 hover:text-red-800" data-id="${staff.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                staffContainer.appendChild(staffElement);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-staff').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const staffId = parseInt(this.dataset.id);
+                    editStaffMember(staffId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-staff').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const staffId = parseInt(this.dataset.id);
+                    deleteStaffMember(staffId);
+                });
+            });
+        }
+        
+        function getRoleName(role) {
+            const roles = {
+                'manager': 'Manager',
+                'waiter': 'Waiter',
+                'kitchen': 'Kitchen Staff'
+            };
+            return roles[role] || role;
+        }
+        
+        function getRoleColor(role) {
+            const colors = {
+                'manager': 'bg-purple-100 text-purple-800',
+                'waiter': 'bg-blue-100 text-blue-800',
+                'kitchen': 'bg-green-100 text-green-800'
+            };
+            return colors[role] || 'bg-gray-100 text-gray-800';
+        }
+        
+        function filterStaff(role = 'all') {
+            let filteredStaff = staffMembers;
+            
+            // Filter by role
+            if (role !== 'all') {
+                filteredStaff = filteredStaff.filter(staff => staff.role === role);
+            }
+            
+            // Filter by search term
+            const searchTerm = staffSearch.value.toLowerCase();
+            if (searchTerm) {
+                filteredStaff = filteredStaff.filter(staff => 
+                    staff.name.toLowerCase().includes(searchTerm) || 
+                    staff.email.toLowerCase().includes(searchTerm) ||
+                    staff.phone.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Render filtered staff
+            if (filteredStaff.length === 0) {
+                staffContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No staff members match your search</p>
+                    </div>
+                `;
+            } else {
+                staffContainer.innerHTML = '';
+                filteredStaff.forEach(staff => {
+                    const staffElement = document.createElement('div');
+                    staffElement.className = 'p-4 hover:bg-gray-50 transition-colors';
+                    staffElement.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-user text-gray-400"></i>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h4 class="font-medium">${staff.name}</h4>
+                                        <p class="text-sm text-gray-500 mt-1">${staff.email}</p>
+                                        <div class="flex items-center mt-2">
+                                            <span class="text-xs px-2 py-1 rounded-full ${getRoleColor(staff.role)}">${getRoleName(staff.role)}</span>
+                                            <span class="mx-2 text-gray-300">•</span>
+                                            <span class="text-xs ${staff.active ? 'text-green-600' : 'text-red-600'}">
+                                                ${staff.active ? 'Active' : 'Inactive'}
+                                            </span>
+                                            <span class="mx-2 text-gray-300">•</span>
+                                            <span class="text-xs text-gray-500">${staff.phone}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex space-x-2">
+                                        <button class="edit-staff text-purple-600 hover:text-purple-800" data-id="${staff.id}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="delete-staff text-red-600 hover:text-red-800" data-id="${staff.id}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    staffContainer.appendChild(staffElement);
+                });
+                
+                // Re-add event listeners to action buttons
+                document.querySelectorAll('.edit-staff').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const staffId = parseInt(this.dataset.id);
+                        editStaffMember(staffId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-staff').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const staffId = parseInt(this.dataset.id);
+                        deleteStaffMember(staffId);
+                    });
+                });
+            }
+        }
+        
+        function loadAnalyticsData() {
+            // In a real app, this would fetch data from Supabase based on date range
+            // For demo purposes, we're using mock data
+            
+            totalRevenue.textContent = '45,820';
+            totalOrders.textContent = '112';
+            avgOrderValue.textContent = '409';
+            busiestHour.textContent = '7:00 PM';
+            
+            // Load popular items
+            const popularItems = [
+                { name: 'Chicken Biryani', orders: 42, revenue: 10500 },
+                { name: 'Beef Kebab', orders: 28, revenue: 5040 },
+                { name: 'Pizza', orders: 25, revenue: 11250 },
+                { name: 'Pasta', orders: 18, revenue: 3600 },
+                { name: 'Mango Lassi', orders: 35, revenue: 2800 }
+            ];
+            
+            popularItemsList.innerHTML = '';
+            popularItems.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex items-center justify-between';
+                itemElement.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-6">${index + 1}.</span>
+                        <span class="font-medium">${item.name}</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium">${item.orders} orders</p>
+                        <p class="text-sm text-gray-500">৳${item.revenue}</p>
+                    </div>
+                `;
+                popularItemsList.appendChild(itemElement);
+            });
+        }
+        
+        function exportAnalyticsData() {
+            // In a real app, this would generate and download a CSV or PDF report
+            alert('Analytics data exported successfully!');
+        }
+        
+        function loadNotifications() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            notifications = [
+                { id: 1, message: 'New order #12345 placed for Table 5', type: 'order', read: false, time: '5 minutes ago' },
+                { id: 2, message: 'Menu item "Chicken Biryani" is running low', type: 'warning', read: false, time: '12 minutes ago' },
+                { id: 3, message: 'Table 8 requested assistance', type: 'assistance', read: true, time: '25 minutes ago' },
+                { id: 4, message: 'System update completed successfully', type: 'system', read: true, time: '2 hours ago' }
+            ];
+            
+            updateNotificationBadge();
+            renderNotifications();
+        }
+        
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const pendingOrders = orders.filter(o => o.status === 'placed' || o.status === 'confirmed').length;
+            
+            if (unreadCount > 0) {
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.classList.remove('hidden');
+            } else {
+                notificationBadge.classList.add('hidden');
+            }
+            
+            if (pendingOrders > 0) {
+                orderCountBadge.textContent = pendingOrders;
+                orderCountBadge.classList.remove('hidden');
+            } else {
+                orderCountBadge.classList.add('hidden');
+            }
+        }
+        
+        function renderNotifications() {
+            notificationList.innerHTML = '';
+            
+            if (notifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div class="text-center py-4">
+                        <p class="text-gray-500">No notifications</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('div');
+                notificationElement.className = `px-4 py-3 border-b hover:bg-gray-50 cursor-pointer ${notification.read ? '' : 'bg-blue-50'}`;
+                notificationElement.innerHTML = `
+                    <div class="flex justify-between">
+                        <p class="text-sm ${notification.read ? 'text-gray-600' : 'font-medium text-gray-900'}">${notification.message}</p>
+                        ${!notification.read ? '<span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>' : ''}
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">${notification.time}</p>
+                `;
+                
+                notificationElement.addEventListener('click', function() {
+                    markNotificationAsRead(notification.id);
+                });
+                
+                notificationList.appendChild(notificationElement);
+            });
+        }
+        
+        function markNotificationAsRead(id) {
+            const notification = notifications.find(n => n.id === id);
+            if (notification) {
+                notification.read = true;
+                updateNotificationBadge();
+                renderNotifications();
+            }
+        }
+        
+        function markAllNotificationsAsRead() {
+            notifications.forEach(notification => {
+                notification.read = true;
+            });
+            updateNotificationBadge();
+            renderNotifications();
+        }
+        
+        function loadExistingQRCodes() {
+            // In a real app, this would fetch data from Supabase
+            // For demo purposes, we're using mock data
+            
+            const qrCodes = [
+                { table: 1, url: 'https://orestify.com/menu?table=1', generated: '2023-06-10' },
+                { table: 2, url: 'https://orestify.com/menu?table=2', generated: '2023-06-10' },
+                { table: 3, url: 'https://orestify.com/menu?table=3', generated: '2023-06-12' },
+                { table: 4, url: 'https://orestify.com/menu?table=4', generated: '2023-06-12' },
+                { table: 5, url: 'https://orestify.com/menu?table=5', generated: '2023-06-15' }
+            ];
+            
+            existingQRCodes.innerHTML = '';
+            
+            if (qrCodes.length === 0) {
+                existingQRCodes.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-qrcode text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No QR codes generated yet</p>
+                        <p class="text-sm text-gray-400 mt-1">Generate your first QR code to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            qrCodes.forEach(qr => {
+                const qrElement = document.createElement('div');
+                qrElement.className = 'flex items-center justify-between p-3 border rounded-lg';
+                qrElement.innerHTML = `
+                    <div>
+                        <p class="font-medium">Table ${qr.table}</p>
+                        <p class="text-sm text-gray-500">Generated on ${qr.generated}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="text-purple-600 hover:text-purple-800 view-qr" data-table="${qr.table}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="text-green-600 hover:text-green-800 download-existing-qr" data-table="${qr.table}">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `;
+                
+                existingQRCodes.appendChild(qrElement);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.view-qr').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const table = this.dataset.table;
+                    viewQRCode(table);
+                });
+            });
+            
+            document.querySelectorAll('.download-existing-qr').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const table = this.dataset.table;
+                    downloadExistingQRCode(table);
+                });
+            });
+        }
+        
+        function viewQRCode(table) {
+            // In a real app, this would display the QR code for the specified table
+            alert(`Viewing QR code for Table ${table}`);
+        }
+        
+        function downloadExistingQRCode(table) {
+            // In a real app, this would download the QR code for the specified table
+            alert(`Downloading QR code for Table ${table}`);
+        }
+        
+        // Modal Functions
+        function openAddMenuItemModal() {
+            addMenuItemModal.classList.remove('hidden');
+            menuItemModalTitle.textContent = 'Add Menu Item';
+            currentEditingItemId = null;
+            clearMenuItemForm();
+        }
+        
+        function closeAddMenuItemModal() {
+            addMenuItemModal.classList.add('hidden');
+        }
+        
+        function clearMenuItemForm() {
+            itemName.value = '';
+            itemPrice.value = '';
+            itemCategory.value = 'main';
+            itemDescription.value = '';
+            itemImage.value = '';
+            imagePreviewContainer.classList.add('hidden');
+            itemAvailable.checked = true;
+        }
+        
+        function saveMenuItem() {
+            const name = itemName.value.trim();
+            const price = parseFloat(itemPrice.value);
+            const category = itemCategory.value;
+            const description = itemDescription.value.trim();
+            const available = itemAvailable.checked;
+            
+            if (!name || isNaN(price)) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            if (currentEditingItemId) {
+                // Update existing item
+                const itemIndex = menuItems.findIndex(item => item.id === currentEditingItemId);
+                if (itemIndex !== -1) {
+                    menuItems[itemIndex] = {
+                        ...menuItems[itemIndex],
+                        name,
+                        price,
+                        category,
+                        description,
+                        available
+                    };
+                    
+                    // Handle image if changed
+                    if (itemImage.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            menuItems[itemIndex].image = event.target.result;
+                            renderMenuItems();
+                            closeAddMenuItemModal();
+                            showNotification('Menu item updated successfully!');
+                        };
+                        reader.readAsDataURL(itemImage.files[0]);
+                    } else {
+                        renderMenuItems();
+                        closeAddMenuItemModal();
+                        showNotification('Menu item updated successfully!');
+                    }
+                }
+            } else {
+                // Add new item
+                const newItem = {
+                    id: Date.now(),
+                    name,
+                    price,
+                    category,
+                    description,
+                    available,
+                    image: null
+                };
+                
+                // Handle image upload if exists
+                if (itemImage.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        newItem.image = event.target.result;
+                        menuItems.push(newItem);
+                        renderMenuItems();
+                        closeAddMenuItemModal();
+                        showNotification('Menu item added successfully!');
+                    };
+                    reader.readAsDataURL(itemImage.files[0]);
+                } else {
+                    menuItems.push(newItem);
+                    renderMenuItems();
+                    closeAddMenuItemModal();
+                    showNotification('Menu item added successfully!');
+                }
+            }
+        }
+        
+        function editMenuItem(id) {
+            const item = menuItems.find(item => item.id === id);
+            if (!item) return;
+            
+            itemName.value = item.name;
+            itemPrice.value = item.price;
+            itemCategory.value = item.category;
+            itemDescription.value = item.description;
+            itemAvailable.checked = item.available;
+            
+            if (item.image) {
+                imagePreview.src = item.image;
+                imagePreviewContainer.classList.remove('hidden');
+            } else {
+                imagePreviewContainer.classList.add('hidden');
+            }
+            
+            menuItemModalTitle.textContent = 'Edit Menu Item';
+            currentEditingItemId = id;
+            addMenuItemModal.classList.remove('hidden');
+        }
+        
+        function deleteMenuItem(id) {
+            if (confirm('Are you sure you want to delete this menu item?')) {
+                menuItems = menuItems.filter(item => item.id !== id);
+                renderMenuItems();
+                showNotification('Menu item deleted successfully');
+            }
+        }
+        
+        function openAddStaffModal() {
+            addStaffModal.classList.remove('hidden');
+            staffModalTitle.textContent = 'Add Staff Member';
+            currentEditingStaffId = null;
+            clearStaffForm();
+        }
+        
+        function closeAddStaffModal() {
+            addStaffModal.classList.add('hidden');
+        }
+        
+        function clearStaffForm() {
+            staffName.value = '';
+            staffEmail.value = '';
+            staffRole.value = 'waiter';
+            staffPhone.value = '';
+            staffActive.checked = true;
+        }
+        
+        function saveStaffMember() {
+            const name = staffName.value.trim();
+            const email = staffEmail.value.trim();
+            const role = staffRole.value;
+            const phone = staffPhone.value.trim();
+            const active = staffActive.checked;
+            
+            if (!name || !email || !phone) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            if (currentEditingStaffId) {
+                // Update existing staff
+                const staffIndex = staffMembers.findIndex(staff => staff.id === currentEditingStaffId);
+                if (staffIndex !== -1) {
+                    staffMembers[staffIndex] = {
+                        ...staffMembers[staffIndex],
+                        name,
+                        email,
+                        role,
+                        phone,
+                        active
+                    };
+                    
+                    renderStaff();
+                    closeAddStaffModal();
+                    showNotification('Staff member updated successfully!');
+                }
+            } else {
+                // Add new staff
+                const newStaff = {
+                    id: Date.now(),
+                    name,
+                    email,
+                    role,
+                    phone,
+                    active
+                };
+                
+                staffMembers.push(newStaff);
+                renderStaff();
+                closeAddStaffModal();
+                showNotification('Staff member added successfully!');
+            }
+        }
+        
+        function editStaffMember(id) {
+            const staff = staffMembers.find(staff => staff.id === id);
+            if (!staff) return;
+            
+            staffName.value = staff.name;
+            staffEmail.value = staff.email;
+            staffRole.value = staff.role;
+            staffPhone.value = staff.phone;
+            staffActive.checked = staff.active;
+            
+            staffModalTitle.textContent = 'Edit Staff Member';
+            currentEditingStaffId = id;
+            addStaffModal.classList.remove('hidden');
+        }
+        
+        function deleteStaffMember(id) {
+            if (confirm('Are you sure you want to delete this staff member?')) {
+                staffMembers = staffMembers.filter(staff => staff.id !== id);
+                renderStaff();
+                showNotification('Staff member deleted successfully');
+            }
+        }
+        
+        function viewOrderDetails(id) {
+            const order = orders.find(order => order.id === id);
+            if (!order) return;
+            
+            orderId.textContent = `#${order.id}`;
+            orderTable.textContent = order.table;
+            orderTotal.textContent = order.total;
+            
+            // Update status badge
+            const statusColors = {
+                'placed': 'bg-gray-100 text-gray-800',
+                'confirmed': 'bg-blue-100 text-blue-800',
+                'preparing': 'bg-yellow-100 text-yellow-800',
+                'ready': 'bg-green-100 text-green-800',
+                'completed': 'bg-purple-100 text-purple-800'
+            };
+            
+            const statusText = {
+                'placed': 'Placed',
+                'confirmed': 'Confirmed',
+                'preparing': 'Preparing',
+                'ready': 'Ready',
+                'completed': 'Completed'
+            };
+            
+            orderStatusBadge.textContent = statusText[order.status];
+            orderStatusBadge.className = `px-3 py-1 rounded-full text-sm ${statusColors[order.status]}`;
+            
+            // Render order items
+            orderItemsList.innerHTML = '';
+            order.items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex justify-between items-center py-2 border-b';
+                itemElement.innerHTML = `
+                    <div>
+                        <p class="font-medium">${item.name}</p>
+                        <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
+                    </div>
+                    <p class="font-medium">৳${item.price * item.quantity}</p>
+                `;
+                orderItemsList.appendChild(itemElement);
+            });
+            
+            currentViewingOrderId = id;
+            orderDetailsModal.classList.remove('hidden');
+        }
+        
+        function closeOrderDetailsModal() {
+            orderDetailsModal.classList.add('hidden');
+        }
+        
+        function updateOrderStatus(status) {
+            if (!currentViewingOrderId) return;
+            
+            const orderIndex = orders.findIndex(order => order.id === currentViewingOrderId);
+            if (orderIndex === -1) return;
+            
+            orders[orderIndex].status = status;
+            
+            // Generate pickup code if confirming order
+            if (status === 'confirmed' && !orders[orderIndex].pickupCode) {
+                orders[orderIndex].pickupCode = generatePickupCode();
+            }
+            
+            renderOrders();
+            closeOrderDetailsModal();
+            showNotification(`Order #${currentViewingOrderId} status updated to ${status}`);
+            
+            // Update dashboard if needed
+            if (status === 'placed' || status === 'confirmed') {
+                updateNotificationBadge();
+            }
+        }
+        
+        function generatePickupCode() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        }
+        
+        // QR Code Functions
+        function generateQRCode() {
+            const table = tableNumber.value.trim();
+            const url = menuUrl.value.trim();
+            
+            if (!table) {
+                alert('Please enter a table number');
+                return;
+            }
+            
+            if (!url) {
+                alert('Please enter a menu URL');
+                return;
+            }
+            
+            const qrData = `${url}?table=${table}`;
+            qrCode.makeCode(qrData);
+            qrCodeContainer.classList.remove('hidden');
+            
+            showNotification(`QR code generated for Table ${table}`);
+        }
+        
+        function downloadQRCode() {
+            const table = tableNumber.value.trim();
+            if (!table) {
+                alert('Please generate a QR code first');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = `table-${table}-qrcode.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            link.click();
+            
+            showNotification(`QR code for Table ${table} downloaded`);
+        }
+        
+        // Settings Functions
+        function applyBranding() {
+            const savedColor = localStorage.getItem('brandColor');
+            const savedLogo = localStorage.getItem('brandLogo');
+            const savedName = localStorage.getItem('restaurantName');
+            
+            if (savedColor) {
+                brandColorPicker.value = savedColor;
+                document.documentElement.style.setProperty('--color-primary', savedColor);
+            }
+            
+            if (savedLogo) {
+                brandLogoPreview.src = savedLogo;
+                brandLogoPreview.classList.remove('hidden');
+            }
+            
+            if (savedName) {
+                restaurantName.value = savedName;
+            }
+        }
+        
+        function saveBrandingSettings() {
+            const color = brandColorPicker.value;
+            const name = restaurantName.value.trim();
+            
+            localStorage.setItem('brandColor', color);
+            localStorage.setItem('restaurantName', name);
+            
+            if (logoUpload.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    localStorage.setItem('brandLogo', event.target.result);
+                    showNotification('Branding saved successfully!');
+                    applyBranding();
+                };
+                reader.readAsDataURL(logoUpload.files[0]);
+            } else {
+                showNotification('Branding saved successfully!');
+                applyBranding();
+            }
+        }
+        
+        function saveRestaurantSettings() {
+            const email = contactEmail.value.trim();
+            const phone = phoneNumber.value.trim();
+            const address = restaurantAddress.value.trim();
+            const opening = openingTime.value;
+            const closing = closingTime.value;
+            
+            localStorage.setItem('contactEmail', email);
+            localStorage.setItem('phoneNumber', phone);
+            localStorage.setItem('restaurantAddress', address);
+            localStorage.setItem('openingTime', opening);
+            localStorage.setItem('closingTime', closing);
+            
+            showNotification('Restaurant details saved successfully!');
+        }
+        
+        // Utility Functions
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 10);
+            
+            // Animate out and remove
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        function setupRealtimeSubscriptions() {
+            // In a real app, this would set up Supabase realtime subscriptions
+            // For demo purposes, we're simulating real-time updates
+            
+            // Simulate new orders every 30 seconds
+            setInterval(() => {
+                if (Math.random() > 0.7) { // 30% chance of new order
+                    const tables = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+                    const menuItemNames = ['Chicken Biryani', 'Beef Kebab', 'Pizza', 'Pasta', 'Burger', 'Salad', 'Mango Lassi'];
+                    
+                    const newOrder = {
+                        id: Date.now(),
+                        table: tables[Math.floor(Math.random() * tables.length)],
+                        items: [
+                            {
+                                name: menuItemNames[Math.floor(Math.random() * menuItemNames.length)],
+                                price: Math.floor(Math.random() * 200) + 100,
+                                quantity: Math.floor(Math.random() * 3) + 1
+                            }
+                        ],
+                        total: 0,
+                        status: 'placed',
+                        time: new Date().toISOString(),
+                        pickupCode: null
+                    };
+                    
+                    // Calculate total
+                    newOrder.total = newOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    
+                    orders.unshift(newOrder);
+                    renderOrders();
+                    updateNotificationBadge();
+                    
+                    // Add notification
+                    const notification = {
+                        id: Date.now(),
+                        message: `New order #${newOrder.id} placed for Table ${newOrder.table}`,
+                        type: 'order',
+                        read: false,
+                        time: 'Just now'
+                    };
+                    
+                    notifications.unshift(notification);
+                    updateNotificationBadge();
+                    renderNotifications();
+                    
+                    showNotification(`New order received for Table ${newOrder.table}`);
+                }
+            }, 30000);
+        }
+    </script>
+</body>
+</html>
